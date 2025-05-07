@@ -9,6 +9,9 @@
 <div class="big-box">
     <h1>Бронирование мест в коворкинге</h1>
 </div>
+<div class="big-box">
+    <h2>Посмотреть свободные места</h2>
+</div>
 <div class="input-container">
     <label for="check-time">Выберите дату и время</label>
     <input type="datetime-local"
@@ -68,7 +71,7 @@
     <div class="big-box">
         <h2>Забронировать место</h2>
     </div>
-    <div  class="input-container"  id="booking-inputs">
+    <div  class="input-container"  id="booking-inputs-title">
         <label>Введите ваш username</label>
         <input type="text" id="username" name="username" placeholder="Введите username">
 
@@ -90,8 +93,9 @@
                min="2025-04-01T00:00"
                max="2025-12-31T23:59"
                step="900">
+        <button class="booking-button">Забронировать</button>
     </div>
-    <button>Зарегистрироваться</button>
+    <button class="registration-button">Зарегистрироваться</button>
 </div>
 </body>
 </html>

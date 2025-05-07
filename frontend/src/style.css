@@ -16,7 +16,8 @@ h1 {
 
 
 div {
-    margin: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 input {
@@ -26,6 +27,7 @@ input {
     font-size: 16px;
     background-color: #f8f8f8;
     color: #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .big-box {
@@ -41,7 +43,7 @@ input {
     gap: 10px;
 }
 
-#booking-inputs label {
+#booking-inputs-title label {
     margin-top: 15px;
 }
 
@@ -70,4 +72,42 @@ td {
 }
 .column-header {
     background-color: #e6e6e6;
+}
+
+            /*Кнопки*/
+button {
+    /* Размеры */
+    width: 200px;
+    height: 50px;
+    /* Цвета */
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    /* Текст */
+    font-size: 16px;
+    font-weight: bold;
+    /* Курсор */
+    cursor: pointer;
+    /* Анимация при наведении */
+    transition: background-color 0.3s;
+}
+
+.registration-button {
+    background-color: #4CAF50;
+    color: white;
+    margin: 20px;
+}
+.registration-button:hover {
+    background: #3498db;
+    color: white;
+}
+
+.booking-button {
+    background-color: #4CAF50;
+    color: white;
+    margin: 20px;
+}
+.booking-button:hover {
+    background: #3498db;
+    color: white;
 }
