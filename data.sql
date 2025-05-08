@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS booking (
     id SERIAL PRIMARY KEY,
     id_place SMALLINT NOT NULL CHECK (id_place > 0 AND id_place <= 20),
     id_user INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    st_time TIME NOT NULL,
-    en_time TIME NOT NULL
+    st_datetime TIMESTAMP NOT NULL,
+    en_datetime TIMESTAMP NOT NULL,
+    duration SMALLINT CHECK (duration >= 0 AND duration <= 1440),
 );

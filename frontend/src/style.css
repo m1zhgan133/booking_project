@@ -92,22 +92,33 @@ button {
     transition: background-color 0.3s;
 }
 
-.registration-button {
+#check-booking-button {
     background-color: #4CAF50;
     color: white;
     margin: 20px;
+    width: 380px;
 }
-.registration-button:hover {
+#check-booking-button:hover {
     background: #3498db;
     color: white;
 }
 
-.booking-button {
+#registration-button {
     background-color: #4CAF50;
     color: white;
     margin: 20px;
 }
-.booking-button:hover {
+#registration-button:hover {
+    background: #3498db;
+    color: white;
+}
+
+#booking-button {
+    background-color: #4CAF50;
+    color: white;
+    margin: 20px;
+}
+#booking-button:hover {
     background: #3498db;
     color: white;
 }
