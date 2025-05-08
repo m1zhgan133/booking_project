@@ -1,3 +1,4 @@
+from flask import render_template
 from sqlalchemy import create_engine, Column, Integer, SmallInteger, Time, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import and_, or_, not_
@@ -46,13 +47,15 @@ Base.metadata.create_all(bind=engine)
 # ---------------------- Основные функции ----------------------
 
 # ---------------------- CRUD для USERS
-def create_user(name, password):
+def create_user(name, password) -> bool:
     session = SessionLocal()
-    new_user = User(name=name, password=password)
-    session.add(new_user)
-    session.commit()
-    session.close()
-
+    try:
+        new_user = User(name=name, password=password)
+        session.add(new_user)
+        session.commit()
+        return True
+    except: return False
+    finally: session.close()
 
 def get_user(name=None, password=None, id=None):
     session = SessionLocal()
@@ -90,51 +93,55 @@ def get_user(name=None, password=None, id=None):
             # "password": user.password, не будем так делать пожалуй ;)
             "bookings": user_bookings
         }
-    finally:
-        session.close()
+    except: return False
+    finally: session.close()
 
 
 def get_all_users():
     session = SessionLocal()
-    users = session.query(User).all()
-    users_list = []
-    for user in users:
-        users_list.append({
-            "id": user.id,
-            "name": user.name,
-            # "password": user.password
-        })
-    session.close()
-    return users_list
+    try:
+        users = session.query(User).all()
+        users_list = []
+        for user in users:
+            users_list.append({
+                "id": user.id,
+                "name": user.name,
+                # "password": user.password
+            })
+        return users_list
+    except: return False
+    finally: session.close()
 
 
-def update_user(id, update_dict):
+def update_user(id, update_dict) -> bool:
     session = SessionLocal()
-    user = session.query(User).filter(User.id == id).first()
-    if user:
-        if update_dict['name']:
-            user.name = update_dict['name']
-        if update_dict['password']:
-            user.password = update_dict['password']
-        session.commit()
-        session.close()
-        return True
-    session.close()
-    return False
-
-
-def delete_user(id):
-    session = SessionLocal()
-    user = session.query(User).filter(User.id == id).first()
-    if not user:
-        session.close()
+    try:
+        user = session.query(User).filter(User.id == id).first()
+        if user:
+            if update_dict['name']:
+                user.name = update_dict['name']
+            if update_dict['password']:
+                user.password = update_dict['password']
+            session.commit()
+            return True
         return False
+    except: return False
+    finally: session.close()
 
-    if user:
-        session.delete(user)
-        session.commit()
-        session.close()
-        return True
+
+def delete_user(id) -> bool:
+    session = SessionLocal()
+    try:
+        user = session.query(User).filter(User.id == id).first()
+        if not user:
+            return False
+
+        if user:
+            session.delete(user)
+            session.commit()
+            return True
+    except: return False
+    finally: session.close()
 
 
 # ---------------------- CRUD для BOOKING
@@ -155,56 +162,56 @@ def create_booking(id_user, id_place, datetime_str, duration_minutes=120):
         session.add(new_booking)
         session.commit()
         return new_booking
-    except:
-        return None
-    finally:
-        session.close()
+    except: return False
+    finally: session.close()
 
 
 
 def get_bookings_by_datetime_range(start_str, end_str):
     session = SessionLocal()
+    try:
+        start = datetime.fromisoformat(start_str)
+        end = datetime.fromisoformat(end_str)
 
-    start = datetime.fromisoformat(start_str)
-    end = datetime.fromisoformat(end_str)
+        bookings = session.query(Booking).filter(
+            and_(
+                not_(and_(Booking.st_datetime < start, Booking.en_datetime < start)),
+                not_(and_(Booking.st_datetime > end, Booking.en_datetime > end))
+            )
+        ).all() # берет только тех у кого хоть какая-то часть лежит внутри интервала
 
-    bookings = session.query(Booking).filter(
-        and_(
-            not_(and_(Booking.st_datetime < start, Booking.en_datetime < start)),
-            not_(and_(Booking.st_datetime > end, Booking.en_datetime > end))
-        )
-    ).all() # берет только тех у кого хоть какая-то часть лежит внутри интервала
-    session.close()
-
-    return [{
-        "id": b.id,
-        "id_user": b.id_user,
-        "id_place": b.id_place,
-        "st_datetime": b.st_datetime.isoformat(),
-        "en_datetime": b.en_datetime.isoformat(),
-        "duration": b.duration
-    } for b in bookings]
+        return [{
+            "id": b.id,
+            "id_user": b.id_user,
+            "id_place": b.id_place,
+            "st_datetime": b.st_datetime.isoformat(),
+            "en_datetime": b.en_datetime.isoformat(),
+            "duration": b.duration
+        } for b in bookings]
+    except: return False
+    finally: session.close()
 
 
 def get_booking_by_id(booking_id):
     session = SessionLocal()
-    booking = session.query(Booking).filter(Booking.id == booking_id).first()
-    session.close()
-    if booking:
-        return {
-            "id": booking.id,
-            "id_place": booking.id_place,
-            "id_user": booking.id_user,
-            "st_datetime": booking.st_datetime.isoformat(timespec='minutes'),
-            "en_datetime": booking.en_datetime.isoformat(timespec='minutes'),
-            "duration": booking.duration,
-            "user": {
-                "id": booking.user.id,
-                "name": booking.user.name
-            } if booking.user else None
-        }
-    return None
-
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if booking:
+            return {
+                "id": booking.id,
+                "id_place": booking.id_place,
+                "id_user": booking.id_user,
+                "st_datetime": booking.st_datetime.isoformat(timespec='minutes'),
+                "en_datetime": booking.en_datetime.isoformat(timespec='minutes'),
+                "duration": booking.duration,
+                "user": {
+                    "id": booking.user.id,
+                    "name": booking.user.name
+                } if booking.user else None
+            }
+        return False
+    except: return False
+    finally: session.close()
 
 def get_all_bookings():
     session = SessionLocal()
@@ -224,51 +231,54 @@ def get_all_bookings():
 
 def get_user_bookings(user_id):
     session = SessionLocal()
-    bookings = session.query(Booking).filter(
-        Booking.id_user == user_id
-    ).order_by(Booking.st_datetime).all()
-    session.close()
+    try:
+        bookings = session.query(Booking).filter(
+            Booking.id_user == user_id
+        ).order_by(Booking.st_datetime).all()
 
-    return [{
-        "id": b.id,
-        "id_place": b.id_place,
-        "id_user": b.id_user,
-        "st_datetime": b.st_datetime.isoformat(timespec='minutes'),
-        "en_datetime": b.en_datetime.isoformat(timespec='minutes'),
-        "duration_minutes": b.duration
-    } for b in bookings]
+        return [{
+            "id": b.id,
+            "id_place": b.id_place,
+            "id_user": b.id_user,
+            "st_datetime": b.st_datetime.isoformat(timespec='minutes'),
+            "en_datetime": b.en_datetime.isoformat(timespec='minutes'),
+            "duration_minutes": b.duration
+        } for b in bookings]
+    except: return False
+    finally: session.close()
 
 
-def update_booking(booking_id, data):
+def update_booking(booking_id, data) -> bool:
     session = SessionLocal()
-    booking = session.query(Booking).filter(Booking.id == booking_id).first()
-    if not booking:
-        return False
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            return False
 
-    if 'id_place' in data:
-        booking.id_place = data['id_place']
+        if 'id_place' in data:
+            booking.id_place = data['id_place']
 
-    if 'st_datetime' in data:
-        new_st = datetime.fromisoformat(data['st_datetime'])
-        booking.st_datetime = new_st
-        booking.en_datetime = new_st + timedelta(minutes=booking.duration)
+        if 'st_datetime' in data:
+            new_st = datetime.fromisoformat(data['st_datetime'])
+            booking.st_datetime = new_st
+            booking.en_datetime = new_st + timedelta(minutes=booking.duration)
 
-    if 'duration' in data:
-        booking.duration = data['duration']
-        booking.en_datetime = booking.st_datetime + timedelta(minutes=data['duration'])
-
-    session.commit()
-    session.close()
-    return True
+        if 'duration' in data:
+            booking.duration = data['duration']
+            booking.en_datetime = booking.st_datetime + timedelta(minutes=data['duration'])
+        session.commit()
+        return True
+    except: return False
+    finally: session.close()
 
 def delete_booking_by_id(booking_id):
     session = SessionLocal()
-    booking = session.query(Booking).filter(Booking.id == booking_id).first()
-    if not booking:
-        session.close()
-        return False
-    session.delete(booking)
-    session.commit()
-    session.close()
-    return True
-
+    try:
+        booking = session.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            return False
+        session.delete(booking)
+        session.commit()
+        return True
+    except: return False
+    finally: session.close()
