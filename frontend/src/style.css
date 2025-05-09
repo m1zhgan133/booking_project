@@ -90,35 +90,97 @@ button {
     cursor: pointer;
     /* Анимация при наведении */
     transition: background-color 0.3s;
-}
-
-#check-booking-button {
     background-color: #4CAF50;
     color: white;
     margin: 20px;
+}
+
+button:hover {
+    background: #3498db;
+    color: white;
+}
+#check-booking-button {
     width: 380px;
 }
-#check-booking-button:hover {
-    background: #3498db;
-    color: white;
+/*---------------------------- Стили для информации о бронировании ----------------------------*/
+/* Основные стили контейнера */
+.booking-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 колонки */
+    gap: 20px; /* Расстояние между карточками */
+    max-width: 1000px; /* Максимальная ширина контейнера */
+    margin: 0 auto; /* Центрирование на странице */
+    padding: 20px;
 }
 
-#registration-button {
-    background-color: #4CAF50;
-    color: white;
-    margin: 20px;
-}
-#registration-button:hover {
-    background: #3498db;
-    color: white;
+/* Карточка бронирования */
+.booking-card {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 20px;
 }
 
-#booking-button {
-    background-color: #4CAF50;
-    color: white;
-    margin: 20px;
+.booking-card h3 {
+    margin-bottom: 20px;
+    text-align: center;
 }
-#booking-button:hover {
-    background: #3498db;
-    color: white;
+
+.booking-info {
+    margin-bottom: 20px;
 }
+
+.booking-info p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.booking-info span {
+    font-weight: bold;
+    color: #495056;
+}
+
+.booking-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.cancel-btn, .edit-btn {
+    /*flex: 1;*/
+    border-radius: 5px;
+    margin: 0px;
+}
+
+.cancel-btn {
+    background-color: #dc3545;
+}
+.cancel-btn:hover {
+    background-color: #c82333;
+}
+
+.edit-btn {
+    background-color: #007bff;
+}
+.edit-btn:hover {
+    background-color: #0069d9;
+}
+/*---------------------------- Другие страницы ----------------------------*/
+/*Страница регистрации*/
+#registration-inputs-title label {
+    margin-top: 15px;
+}
+
+/*Страница благодарности*/
+#thank-you-title {
+    margin-bottom: 30px;
+}
+#cat-img {
+    /*display: block;*/
+    /*margin: 0 auto;*/
+    max-width: 50vw;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+}
+

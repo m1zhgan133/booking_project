@@ -14,5 +14,5 @@ from interaction_with_db import *
 # create_booking(1, 3, '2025-04-30T14:30', duration_minutes=0)
 # create_booking(1, 4, '2025-04-30T11:30', duration_minutes=720)
 
-# for b in get_all_bookings():
-#     print(b)
+for b in get_all_bookings():
+    print(b)

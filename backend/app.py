@@ -158,22 +158,31 @@ def create_booking_():
 # def get_booking():
 #     return
 
-@app.route('/api/registration', methods=['POST'])
+@app.route('/api/user', methods=['POST'])
 def create_user_():
     """Создать нового пользователя"""
-    data = request.json
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
     if not data:
-        return error_response("no data, try again", 400)
-    if not data['name'] or not data['password']:
-        return error_response("the name and the password are required", 400)
-    if len(data['name']) > 100 or len(data['password']) > 100:
-        return error_response("name or password is to long(max length 100 chars)", 400)
+        return error_response("Нет данных, отправьте username и пароль", 400)
+    if not username or not password:
+        return error_response("Имя и пароль обязательны", 400)
+    if len(username) > 100 or len(password) > 100:
+        return error_response("Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400)
+
+    # Проверяем уникальность username
+    all_users = get_all_users()
+    for u in all_users:
+        if u['name'] == username:
+            return error_response('Пользователь с таким именем уже существует', 400)
 
     create_user(
-        name=data['name'],
-        password=data['password']
+        name=username,
+        password=password
     )
-    return jsonify({"message": "user was successfully created"}), 201
+    return jsonify({"message": f"Пользователь {username} был успешно создан"}), 201
 
 
 

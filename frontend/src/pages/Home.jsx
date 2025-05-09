@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import {Link} from "react-router-dom";
 
 export default function BookingSystem() {
     // Состояния для проверки свободности мест
@@ -83,6 +84,24 @@ export default function BookingSystem() {
             console.error("Ошибка:", error);
             alert("Произошла ошибка при бронировании");
         }
+    };
+    // ---------------------------- Информация о бронированиях ----------------------------
+    const [bookingData, setBookingData] = useState({
+        place: "12",
+        startTime: "2023-06-15 14:00",
+        endTime: "2023-06-15 16:00",
+        duration: "2 часа"
+    });
+
+// Функции для кнопок
+    const handleCancel = () => {
+        console.log("Бронирование отменено");
+        // Здесь будет HTTP-запрос на отмену
+    };
+
+    const handleEdit = () => {
+        console.log("Редактирование брони");
+        // Здесь будет логика редактирования
     };
 
     return (
@@ -248,7 +267,54 @@ export default function BookingSystem() {
 
                     <button id="booking-button" onClick={handleBooking}>Забронировать</button>
                 </div>
-                <button id="registration-button">Зарегистрироваться</button>
+                <Link to="/registration">
+                    <button id="to-registration-button">Зарегистрироваться</button>
+                </Link>
+            </div>
+
+            {/* Секция броний пользователя */}
+            <div>
+                <div className="booking-container">
+                    <div className="booking-card">
+                        <h3>Информация о бронировании</h3>
+                        <div className="booking-info">
+                            <p><span>Место:</span> {bookingData.place}</p>
+                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                        </div>
+                        <div className="booking-actions">
+                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                        </div>
+                    </div>
+                    <div className="booking-card">
+                        <h3>Информация о бронировании</h3>
+                        <div className="booking-info">
+                            <p><span>Место:</span> {bookingData.place}</p>
+                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                        </div>
+                        <div className="booking-actions">
+                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                        </div>
+                    </div>
+                    <div className="booking-card">
+                        <h3>Информация о бронировании</h3>
+                        <div className="booking-info">
+                            <p><span>Место:</span> {bookingData.place}</p>
+                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                        </div>
+                        <div className="booking-actions">
+                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
