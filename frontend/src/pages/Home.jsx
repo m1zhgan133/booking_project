@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function BookingSystem() {
+export default function BookingSystem() {
     // Состояния для проверки свободности мест
     const [startTime, setStartTime] = useState("2025-04-30T14:30");
     const [endTime, setEndTime] = useState("2025-04-30T15:30");
