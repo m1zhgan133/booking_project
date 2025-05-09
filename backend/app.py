@@ -4,6 +4,7 @@ import psycopg2
 import os
 from datetime import datetime
 import re
+import requests
 from interaction_with_db import * # мое
 # ------------------------------- Вспомогательные функции -------------------------------
 DATABASE_URL = os.getenv(
@@ -36,8 +37,17 @@ def str_time_to_minutes(time_str: str) -> int:
         if 0 <= hours < 24 and 0 <= minutes < 60:
             return hours * 60 + minutes
         return -1
-    except (ValueError, AttributeError):
+    except:
         return -1
+
+def add_minutes_to_datetime(start_datetime_str: str, minutes: int|str) -> str:
+        try:
+            minutes = int(minutes)
+            start_datetime = datetime.fromisoformat(start_datetime_str)
+            result_datetime = start_datetime + timedelta(minutes=minutes)
+            return result_datetime.isoformat(timespec='minutes')
+        except (ValueError, AttributeError) as e:
+            return False
 #------------------------- Запуск DB -------------------------
 def wait_for_db():
     conn = psycopg2.connect(DATABASE_URL)
@@ -59,9 +69,24 @@ with app.app_context():
 def check_availability():
     st_time_str = request.args.get('start')
     en_time_str = request.args.get('end')
+    duration = request.args.get('duration')
+
     # проверяем соответствие формату
-    if not is_datetime(st_time_str) or not is_datetime(en_time_str):
-        return error_response('неверный формат даты', 400)
+    if not is_datetime(st_time_str):
+        return error_response('неверный формат даты(начальное время)', 400)
+
+    if duration:
+        try:
+            minutes = int(duration)
+        except:
+            minutes = str_time_to_minutes(duration)
+        finally:
+            if minutes == -1:
+                return error_response('Неверный формат даты(продолжительность)', 400)
+            en_time_str = add_minutes_to_datetime(st_time_str, minutes)
+
+    if not is_datetime(en_time_str):
+        return error_response('неверный формат даты(конечное время)', 400)
 
     try:
         seats = {
@@ -73,7 +98,7 @@ def check_availability():
         for place in occupied_places:
             seats[int(place)] = False
 
-        return jsonify({"seats": seats})
+        return jsonify({"seats": seats}), 200 # seats - ответ на вопрос "свободно ли место?" для каждого места
     except Exception as e:
         print(str(e))
         return error_response(str(e), 400)
@@ -103,6 +128,15 @@ def create_booking_():
     sender_user = get_user(name=username, password=password)
     if not sender_user:
         return error_response('Пользователь с таким именем и паролем не найден', 404)
+
+    response = requests.get('http://localhost:5000/api/check_availability',
+        params={'start': st_datetime_str, 'duration': duration})
+    if response.status_code != 200:
+        print(response.json())
+        return error_response('Не удалось проверить доступность места',400)
+    if not response.json()['seats'].get(str(id_place), False):
+        return error_response('Место уже занято',400)
+
 
     new_book = create_booking(id_user=sender_user['id'], id_place=id_place, datetime_str=st_datetime_str, duration_minutes=duration)
     if new_book:
