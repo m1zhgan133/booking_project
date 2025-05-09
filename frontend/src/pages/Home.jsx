@@ -7,14 +7,20 @@ export default function BookingSystem() {
     const [endTime, setEndTime] = useState("2025-04-30T15:30");
     const [seatsStatus, setSeatsStatus] = useState(Array(20).fill(null));
 
-    // Состояния для формы бронирования
+    //Состояния для авторизации
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [authUsername, setAuthUsername] = useState("");
+    const [authPassword, setAuthPassword] = useState("");
+
+    // Состояния для формы бронирования
     const [bookingStartTime, setBookingStartTime] = useState("2025-04-30T14:30");
     const [duration, setDuration] = useState("01:00");
     const [seatNumber, setSeatNumber] = useState("");
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
+
 
     const checkAvailability = async () => {
         try {
@@ -36,16 +42,47 @@ export default function BookingSystem() {
         }
     };
 
+    const auth = async () => {
+        const newErrors = {
+            username: !username,
+            password: !password
+        }
+        // Проверяем, есть ли true
+        const hasErrors = Object.values(newErrors).some(Boolean);
+        if (hasErrors) {
+            setErrors(newErrors);
+            return;
+        }
+        setErrors({}); // Сброс ошибок
+
+        try {
+            const response = await fetch(`/api/user?username=${username}&password=${password}`);
+            if (response.status === 200) {
+                setSuccessMessage("Вы успешно авторизовались");
+                setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
+                // Сброс формы после бронирования
+                setAuthUsername(username);
+                setAuthPassword(password);
+                setUsername("");
+                setPassword("");
+                setIsLoggedIn(true);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Произошла ошибка при авторизации 1");
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при авторизации 2");
+        }
+    }
+
     const handleBooking = async () => {
         // проверяем все ли поля заполненны, если не заполненно подсвечиваем красным
         const newErrors = {
-            username: !username,
-            password: !password,
             bookingStartTime: !bookingStartTime,
             duration: !duration,
             seatNumber: !seatNumber
         };
-
         // Проверяем, есть ли true
         const hasErrors = Object.values(newErrors).some(Boolean);
         if (hasErrors) {
@@ -61,11 +98,11 @@ export default function BookingSystem() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: username,
-                    password: password,
+                    username: authUsername,
+                    password: authPassword,
                     st_datetime: bookingStartTime,
                     duration: duration,
-                    id_place: seatNumber
+                    id_place: seatNumber,
                 })
             });
 
@@ -73,8 +110,6 @@ export default function BookingSystem() {
                 setSuccessMessage("Запись успешно создана");
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
                 // Сброс формы после бронирования
-                setUsername("");
-                setPassword("");
                 setSeatNumber("");
             } else {
                 const errorData = await response.json();
@@ -200,122 +235,136 @@ export default function BookingSystem() {
                 </div>
             </div>
 
-            {/* Секция бронирования */}
-            <div>
-                <div className="big-box">
-                    <h2>Забронировать место</h2>
-                </div>
-                <div className="input-container" id="booking-inputs-title">
-                    <label>Введите ваш username</label>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        placeholder="Введите username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        style={{ borderColor: errors.username ? 'red' : '' }}
-                    />
+            {!isLoggedIn ? (
 
-                    <label>Введите ваш пароль</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Введите пароль"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={{ borderColor: errors.password ? 'red' : '' }}
-                    />
-
-                    <label>Выберите место (1-20)</label>
-                    <input
-                        type="number"
-                        id="seat-number"
-                        name="seat-number"
-                        placeholder="Номер места (1-20)"
-                        min="1"
-                        max="20"
-                        value={seatNumber}
-                        onChange={(e) => setSeatNumber(e.target.value)}
-                        style={{ borderColor: errors.seatNumber ? 'red' : '' }}
-                    />
-
-                    <label>Выберите дату и время начала брони</label>
-                    <input
-                        type="datetime-local"
-                        name="st-time"
-                        id="st-time"
-                        value={bookingStartTime}
-                        min="2025-04-01T00:00"
-                        max="2025-12-31T23:59"
-                        step="900"
-                        onChange={(e) => setBookingStartTime(e.target.value)}
-                    />
-
-                    <label>Выберите длительность брони</label>
-                    <input
-                        type="time"
-                        name="duration"
-                        id="duration"
-                        value={duration}
-                        min="00:00"
-                        max="23:59"
-                        step="900"
-                        onChange={(e) => setDuration(e.target.value)}
-                    />
-
-                    <button id="booking-button" onClick={handleBooking}>Забронировать</button>
-                </div>
-                <Link to="/registration">
-                    <button id="to-registration-button">Зарегистрироваться</button>
-                </Link>
-            </div>
-
-            {/* Секция броний пользователя */}
-            <div>
-                <div className="booking-container">
-                    <div className="booking-card">
-                        <h3>Информация о бронировании</h3>
-                        <div className="booking-info">
-                            <p><span>Место:</span> {bookingData.place}</p>
-                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                        </div>
-                        <div className="booking-actions">
-                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                        </div>
+                <div>
+                    <div className="big-box">
+                        <h2>Авторизация</h2>
                     </div>
-                    <div className="booking-card">
-                        <h3>Информация о бронировании</h3>
-                        <div className="booking-info">
-                            <p><span>Место:</span> {bookingData.place}</p>
-                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                        </div>
-                        <div className="booking-actions">
-                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                        </div>
+                    <div className="input-container" id="booking-inputs-title">
+                        <label>Введите ваш username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            placeholder="Введите username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            style={{ borderColor: errors.username ? 'red' : '' }}
+                        />
+
+                        <label>Введите ваш пароль</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Введите пароль"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            style={{ borderColor: errors.password ? 'red' : '' }}
+                        />
+                        <button id="auth-button" onClick={auth}>Авторизоваться</button>
                     </div>
-                    <div className="booking-card">
-                        <h3>Информация о бронировании</h3>
-                        <div className="booking-info">
-                            <p><span>Место:</span> {bookingData.place}</p>
-                            <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                            <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                            <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                        </div>
-                        <div className="booking-actions">
-                            <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                            <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                        </div>
+                    <Link to="/registration">
+                        <button id="to-registration-button">Зарегистрироваться</button>
+                    </Link>
+                </div>
+            ) : (
+            <div> {/*  начало контейнира содержащего все что доступно после авторизации */}
+                {/* Секция бронирования */}
+                <div>
+                    <div className="big-box">
+                        <h2>Забронировать место</h2>
+                    </div>
+                    <div className="input-container" id="booking-inputs-title">
+                        <label>Выберите место (1-20)</label>
+                        <input
+                            type="number"
+                            id="seat-number"
+                            name="seat-number"
+                            placeholder="Номер места (1-20)"
+                            min="1"
+                            max="20"
+                            value={seatNumber}
+                            onChange={(e) => setSeatNumber(e.target.value)}
+                            style={{ borderColor: errors.seatNumber ? 'red' : '' }}
+                        />
+
+                        <label>Выберите дату и время начала брони</label>
+                        <input
+                            type="datetime-local"
+                            name="st-time"
+                            id="st-time"
+                            value={bookingStartTime}
+                            min="2025-04-01T00:00"
+                            max="2025-12-31T23:59"
+                            step="900"
+                            onChange={(e) => setBookingStartTime(e.target.value)}
+                        />
+
+                        <label>Выберите длительность брони</label>
+                        <input
+                            type="time"
+                            name="duration"
+                            id="duration"
+                            value={duration}
+                            min="00:00"
+                            max="23:59"
+                            step="900"
+                            onChange={(e) => setDuration(e.target.value)}
+                        />
+
+                        <button id="booking-button" onClick={handleBooking}>Забронировать</button>
                     </div>
                 </div>
-            </div>
+
+                {/* Секция броний пользователя */}
+                <div>
+                    <div className="booking-container">
+                        <div className="booking-card">
+                            <h3>Информация о бронировании</h3>
+                            <div className="booking-info">
+                                <p><span>Место:</span> {bookingData.place}</p>
+                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                            </div>
+                            <div className="booking-actions">
+                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                            </div>
+                        </div>
+                        <div className="booking-card">
+                            <h3>Информация о бронировании</h3>
+                            <div className="booking-info">
+                                <p><span>Место:</span> {bookingData.place}</p>
+                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                            </div>
+                            <div className="booking-actions">
+                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                            </div>
+                        </div>
+                        <div className="booking-card">
+                            <h3>Информация о бронировании</h3>
+                            <div className="booking-info">
+                                <p><span>Место:</span> {bookingData.place}</p>
+                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
+                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
+                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
+                            </div>
+                            <div className="booking-actions">
+                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
+                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> // конец контейнера, содержащего все что доступно после авторизации
+                )}
+
         </div>
     );
 }

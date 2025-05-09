@@ -90,7 +90,7 @@ def get_user(name=None, password=None, id=None):
         return {
             "id": user.id,
             "name": user.name,
-            # "password": user.password, не будем так делать пожалуй ;)
+            "password": user.password if password else None,
             "bookings": user_bookings
         }
     except: return False

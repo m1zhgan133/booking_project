@@ -103,7 +103,7 @@ def check_availability():
         print(str(e))
         return error_response(str(e), 400)
 
-
+# ---------------------------- booking ----------------------------
 @app.route('/api/booking', methods=['POST'])
 def create_booking_():
     data = request.get_json()
@@ -112,6 +112,8 @@ def create_booking_():
     st_datetime_str = data.get('st_datetime')
     duration = data.get('duration')
     id_place = data.get('id_place')
+
+    print(data, username, password, st_datetime_str, duration, id_place)
 
     duration = str_time_to_minutes(duration)
     if duration == -1:
@@ -158,19 +160,28 @@ def create_booking_():
 # def get_booking():
 #     return
 
+# ---------------------------- user ----------------------------
+def is_user_data_correct(username, password):
+    """Проверяет наличие и длину"""
+    if not username or not password:
+        return "Имя и пароль обязательны", 400
+    if len(username) > 100 or len(password) > 100:
+        return "Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400
+    return '', 200
+
+
 @app.route('/api/user', methods=['POST'])
 def create_user_():
-    """Создать нового пользователя"""
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
 
     if not data:
         return error_response("Нет данных, отправьте username и пароль", 400)
-    if not username or not password:
-        return error_response("Имя и пароль обязательны", 400)
-    if len(username) > 100 or len(password) > 100:
-        return error_response("Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400)
+
+    m, code = is_user_data_correct(username, password)
+    if code != 200:
+        return error_response(m, code)
 
     # Проверяем уникальность username
     all_users = get_all_users()
@@ -183,6 +194,25 @@ def create_user_():
         password=password
     )
     return jsonify({"message": f"Пользователь {username} был успешно создан"}), 201
+
+
+@app.route('/api/user', methods=['GET'])
+def get_user_():
+    username = request.args.get('username')
+    password = request.args.get('password')
+
+    m, code = is_user_data_correct(username, password)
+    if code != 200:
+        return error_response(m, code)
+
+    # Проверяем существует ли такой user
+    user = get_user(name=username, password=password)
+    if user and user['name'] == username and user['password'] == password:
+        # должно быть достаточно только усл. user, но я на всякий добавил доп проверки
+        return jsonify(user), 200
+    else:
+        return error_response('Пользователь с такими данными не найден', 404)
+
 
 
 
