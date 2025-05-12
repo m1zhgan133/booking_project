@@ -113,7 +113,7 @@ export default function BookingSystem() {
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
                 // Сброс формы после бронирования
                 setSeatNumber("");
-                fetchUserBookings();
+                await fetchUserBookings();
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Произошла ошибка при бронировании");
@@ -166,11 +166,12 @@ export default function BookingSystem() {
 // Функции для кнопок
     const handleCancel = async (bookingId) => {
         try {
-            const response = await fetch(`/api/bookings`, {
+            const response = await fetch(`/api/booking`, {
                 method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    username: authUsername,
-                    password: authPassword,
+                    username: authDataRef.current.username,
+                    password: authDataRef.current.password,
                     booking_id: bookingId,
                 })
             })

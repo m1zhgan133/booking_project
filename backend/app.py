@@ -173,7 +173,7 @@ def get_booking_():
 # def get_booking():
 #     return
 @app.route('/api/booking', methods=['DELETE'])
-def get_booking():
+def delete_booking():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
