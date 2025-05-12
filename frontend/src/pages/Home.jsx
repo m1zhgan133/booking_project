@@ -23,6 +23,15 @@ export default function BookingSystem() {
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
 
+    // Состояния для кнопки изменить в карточках
+    const [editingBookingId, setEditingBookingId] = useState(0);
+
+    // Для кнопки изменить
+    const [checkboxes, setCheckboxes] = useState({
+        place: false,
+        start: false,
+        duration: false
+    });
 
     const checkAvailability = async () => {
         try {
@@ -190,9 +199,13 @@ export default function BookingSystem() {
         }
     }
 
-    const handleEdit = () => {
-        console.log("Редактирование брони");
-        // Здесь будет логика редактирования
+    const handleEdit = (bookingId) => {
+        if (bookingId === editingBookingId) {
+            setEditingBookingId(0)
+        } else {
+            setEditingBookingId(bookingId);
+        }
+        // setEditingBookingId(editingBookingId === bookingId ? null : bookingId);
     };
 
     return (
@@ -373,22 +386,34 @@ export default function BookingSystem() {
 
                     {userBookings.length > 0 ? (
                         <div className="booking-container">
-                            {userBookings.map(booking => (
-                                <div key={booking.id} className="booking-card">
-                                    <h3>Информация о бронировании ({booking.id})</h3>
-                                    <div className="booking-info">
-                                        <p><span>Место:</span> {booking.id_place}</p>
-                                        <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
-                                        <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
-                                        <p><span>Продолжительность:</span> {booking.duration} минут</p>
+                            {userBookings.map((booking) => (
+                                <React.Fragment key={booking.id}>
+                                    <div className="booking-card">
+                                        <h3>Информация о бронировании ({booking.id})</h3>
+                                        <div className="booking-info">
+                                            <p><span>Место:</span> {booking.id_place}</p>
+                                            <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
+                                            <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
+                                            <p><span>Продолжительность:</span> {booking.duration} минут</p>
+                                        </div>
+                                        <div className="booking-actions">
+                                            <button
+                                                className="cancel-btn"
+                                                onClick={() => handleCancel(booking.id)}>Отменить</button>
+                                            <button
+                                                className="edit-btn"
+                                                onClick={() => handleEdit(booking.id)}>
+                                                {editingBookingId === booking.id ? 'Закрыть' : 'Изменить'}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div className="booking-actions">
-                                        <button
-                                            className="cancel-btn"
-                                            onClick={() => handleCancel(booking.id)}>Отменить</button>
-                                        <button className="edit-btn">Изменить</button>
-                                    </div>
-                                </div>
+                                    {editingBookingId === booking.id && (
+                                        <div className="edit-form-container">
+                                            {/* Здесь будет форма редактирования */}
+                                            <p>Форма редактирования бронирования {booking.id}</p>
+                                        </div>
+                                    )}
+                                </React.Fragment>
                             ))}
                         </div>
                     ) : (

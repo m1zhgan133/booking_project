@@ -177,6 +177,15 @@ button:hover {
 .edit-btn:hover {
     background-color: #0069d9;
 }
+
+.edit-form-container {
+    grid-column: span 2;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 10px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 /*---------------------------- Другие страницы ----------------------------*/
 /*Страница регистрации*/
 #registration-inputs-title label {
