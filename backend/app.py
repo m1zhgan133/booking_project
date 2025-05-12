@@ -48,6 +48,16 @@ def add_minutes_to_datetime(start_datetime_str: str, minutes: int|str) -> str:
             return result_datetime.isoformat(timespec='minutes')
         except (ValueError, AttributeError) as e:
             return False
+
+
+def is_user_data_correct(username, password):
+    """Проверяет наличие и длину"""
+    if not username or not password:
+        return "Имя и пароль обязательны", 400
+    if len(username) > 100 or len(password) > 100:
+        return "Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400
+    return '', 200
+
 #------------------------- Запуск DB -------------------------
 def wait_for_db():
     conn = psycopg2.connect(DATABASE_URL)
@@ -65,43 +75,7 @@ with app.app_context():
     initialize_database()
 
 # ------------------------------------------------------- основные функции
-@app.route('/api/check_availability', methods=['GET'])
-def check_availability():
-    st_time_str = request.args.get('start')
-    en_time_str = request.args.get('end')
-    duration = request.args.get('duration')
 
-    # проверяем соответствие формату
-    if not is_datetime(st_time_str):
-        return error_response('неверный формат даты(начальное время)', 400)
-
-    if duration:
-        try:
-            minutes = int(duration)
-        except:
-            minutes = str_time_to_minutes(duration)
-        finally:
-            if minutes == -1:
-                return error_response('Неверный формат даты(продолжительность)', 400)
-            en_time_str = add_minutes_to_datetime(st_time_str, minutes)
-
-    if not is_datetime(en_time_str):
-        return error_response('неверный формат даты(конечное время)', 400)
-
-    try:
-        seats = {
-            i: True
-            for i in range(1, 21)
-        }
-        all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str)
-        occupied_places = set([b['id_place'] for b in all_bookings])
-        for place in occupied_places:
-            seats[int(place)] = False
-
-        return jsonify({"seats": seats}), 200 # seats - ответ на вопрос "свободно ли место?" для каждого места
-    except Exception as e:
-        print(str(e))
-        return error_response(str(e), 400)
 
 # ---------------------------- booking ----------------------------
 @app.route('/api/booking', methods=['POST'])
@@ -131,10 +105,9 @@ def create_booking_():
     if not sender_user:
         return error_response('Пользователь с таким именем и паролем не найден', 404)
 
-    response = requests.get('http://localhost:5000/api/check_availability',
-        params={'start': st_datetime_str, 'duration': duration})
+    response = requests.get('http://localhost:5000/api/booking',
+        params={'start': st_datetime_str, 'duration': duration, 'request_type':'range'})
     if response.status_code != 200:
-        print(response.json())
         return error_response('Не удалось проверить доступность места',400)
     if not response.json()['seats'].get(str(id_place), False):
         return error_response('Место уже занято',400)
@@ -147,29 +120,82 @@ def create_booking_():
         return error_response('Проблемы с созданием записи', 400)
 
 
-# @app.route('/api/booking', methods=['GET'])
-# def get_booking():
-#     return
+
+@app.route('/api/booking', methods=['GET'])
+def get_booking_():
+    request_type = request.args.get('request_type')  # значения: all, range, None - 1 объект
+
+    if request_type not in ('range', 'all', None):
+        return error_response('Некорректный тип запроса', 400)
+
+    if request_type and request_type == 'range':
+        st_time_str = request.args.get('start')
+        en_time_str = request.args.get('end')
+        duration = request.args.get('duration')
+
+        # проверяем соответствие формату
+        if not is_datetime(st_time_str):
+            return error_response('неверный формат даты(начальное время)', 400)
+
+        if duration:
+            try:
+                minutes = int(duration)
+            except:
+                minutes = str_time_to_minutes(duration)
+            finally:
+                if minutes == -1:
+                    return error_response('Неверный формат даты(продолжительность)', 400)
+                en_time_str = add_minutes_to_datetime(st_time_str, minutes)
+
+        if not is_datetime(en_time_str):
+            return error_response('неверный формат даты(конечное время)', 400)
+
+
+        try:
+            seats = {
+                i: True
+                for i in range(1, 21)
+            }
+            all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str)
+            occupied_places = set([b['id_place'] for b in all_bookings])
+            for place in occupied_places:
+                seats[int(place)] = False
+
+            return jsonify({"seats": seats}), 200 # seats - ответ на вопрос "свободно ли место?" для каждого места
+        except Exception as e:
+            return error_response(str(e), 400)
+
+    elif request_type and request_type == 'all': return error_response('Функция пока не реализованна', 501)
+    elif not request_type: return error_response('Функция пока не реализованна', 501)
+
+
 # @app.route('/api/booking', methods=['PUT'])
 # def get_booking():
 #     return
-# @app.route('/api/booking', methods=['DELETE'])
-# def get_booking():
-#     return
-# @app.route('/api/booking', methods=['POST'])
-# def get_booking():
-#     return
+@app.route('/api/booking', methods=['DELETE'])
+def get_booking():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    booking_id = data.get('booking_id')
+
+    m, code = is_user_data_correct(username, password)
+    if code != 200:
+        return error_response(m, code)
+
+    # Проверяем существует ли такой user
+    user = get_user(name=username, password=password)
+    if user and user['name'] == username and user['password'] == password:
+        if delete_booking_by_id(booking_id):
+            return jsonify({"message": 'Пользователь был успешно удален'}), 204
+        else:
+            return error_response('Бронь с таким id не найдена', 404)
+    else:
+        return error_response('Пользователь с такими данными не найден', 404)
+
+
 
 # ---------------------------- user ----------------------------
-def is_user_data_correct(username, password):
-    """Проверяет наличие и длину"""
-    if not username or not password:
-        return "Имя и пароль обязательны", 400
-    if len(username) > 100 or len(password) > 100:
-        return "Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400
-    return '', 200
-
-
 @app.route('/api/user', methods=['POST'])
 def create_user_():
     data = request.get_json()
@@ -198,20 +224,28 @@ def create_user_():
 
 @app.route('/api/user', methods=['GET'])
 def get_user_():
-    username = request.args.get('username')
-    password = request.args.get('password')
+    request_type = request.args.get('request_type')  # значения: all, range, None - 1 объект
 
-    m, code = is_user_data_correct(username, password)
-    if code != 200:
-        return error_response(m, code)
+    if request_type not in ('all', None):
+        return error_response('Некорректный тип запроса', 400)
 
-    # Проверяем существует ли такой user
-    user = get_user(name=username, password=password)
-    if user and user['name'] == username and user['password'] == password:
-        # должно быть достаточно только усл. user, но я на всякий добавил доп проверки
-        return jsonify(user), 200
-    else:
-        return error_response('Пользователь с такими данными не найден', 404)
+    if request_type and request_type == 'all': return error_response('Функция пока не реализованна', 501)
+
+    if not request_type:
+        username = request.args.get('username')
+        password = request.args.get('password')
+
+        m, code = is_user_data_correct(username, password)
+        if code != 200:
+            return error_response(m, code)
+
+        # Проверяем существует ли такой user
+        user = get_user(name=username, password=password)
+        if user and user['name'] == username and user['password'] == password:
+            # должно быть достаточно только усл. user, но я на всякий добавил доп проверки
+            return jsonify(user), 200
+        else:
+            return error_response('Пользователь с такими данными не найден', 404)
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useRef, useState} from 'react';
 import {Link} from "react-router-dom";
 
 export default function BookingSystem() {
@@ -11,8 +11,10 @@ export default function BookingSystem() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [authUsername, setAuthUsername] = useState("");
-    const [authPassword, setAuthPassword] = useState("");
+    const authDataRef = useRef({
+        username: '',
+        password: ''
+    });
 
     // Состояния для формы бронирования
     const [bookingStartTime, setBookingStartTime] = useState("2025-04-30T14:30");
@@ -24,7 +26,7 @@ export default function BookingSystem() {
 
     const checkAvailability = async () => {
         try {
-            const response = await fetch(`/api/check_availability?start=${startTime}&end=${endTime}`);
+            const response = await fetch(`/api/booking?start=${startTime}&end=${endTime}&request_type=range`);
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error ||'Ошибка при получении данных');
@@ -58,14 +60,14 @@ export default function BookingSystem() {
         try {
             const response = await fetch(`/api/user?username=${username}&password=${password}`);
             if (response.status === 200) {
+                authDataRef.current = {username, password};
                 setSuccessMessage("Вы успешно авторизовались");
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
                 // Сброс формы после бронирования
-                setAuthUsername(username);
-                setAuthPassword(password);
                 setUsername("");
                 setPassword("");
                 setIsLoggedIn(true);
+                fetchUserBookings();
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Произошла ошибка при авторизации 1");
@@ -98,8 +100,8 @@ export default function BookingSystem() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    username: authUsername,
-                    password: authPassword,
+                    username: authDataRef.current.username,
+                    password: authDataRef.current.password,
                     st_datetime: bookingStartTime,
                     duration: duration,
                     id_place: seatNumber,
@@ -111,6 +113,7 @@ export default function BookingSystem() {
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
                 // Сброс формы после бронирования
                 setSeatNumber("");
+                fetchUserBookings();
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Произошла ошибка при бронировании");
@@ -121,18 +124,70 @@ export default function BookingSystem() {
         }
     };
     // ---------------------------- Информация о бронированиях ----------------------------
-    const [bookingData, setBookingData] = useState({
-        place: "12",
-        startTime: "2023-06-15 14:00",
-        endTime: "2023-06-15 16:00",
-        duration: "2 часа"
-    });
+    // const [bookingData, setBookingData] = useState({
+    //     place: "12",
+    //     startTime: "2023-06-15 14:00",
+    //     endTime: "2023-06-15 16:00",
+    //     duration: "2 часа"
+    // });
+    const [userBookings, setUserBookings] = useState([]);
+
+    const fetchUserBookings = async () => {
+        try {
+            const response = await fetch(`/api/user?username=${authDataRef.current.username}&password=${authDataRef.current.password}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(errorData.error || "Ошибка при загрузке бронирований");
+            } else {
+                const data = await response.json();
+                setUserBookings(data.bookings || []);
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Не удалось загрузить бронирования");
+        }
+    };
+
+    // Форматирование даты и времени убираем секунды
+    const formatDateTime = (datetime) => {
+        const options = {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        };
+        return new Date(datetime).toLocaleString('ru-RU', options);
+    };
 
 // Функции для кнопок
-    const handleCancel = () => {
-        console.log("Бронирование отменено");
-        // Здесь будет HTTP-запрос на отмену
-    };
+    const handleCancel = async (bookingId) => {
+        try {
+            const response = await fetch(`/api/bookings`, {
+                method: 'DELETE',
+                body: JSON.stringify({
+                    username: authUsername,
+                    password: authPassword,
+                    booking_id: bookingId,
+                })
+            })
+
+            if (response.ok) {
+                setUserBookings(userBookings.filter(booking => booking.id !== bookingId));
+                setSuccessMessage("Бронирование отменено");
+                setTimeout(() => setSuccessMessage(""), 5000);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Произошла ошибка при отмене бронирования");
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Не удалось отменить бронирование");
+        }
+    }
 
     const handleEdit = () => {
         console.log("Редактирование брони");
@@ -144,16 +199,7 @@ export default function BookingSystem() {
             {/*// сообщение успешное бронирование*/}
             {/* если successMessage не пустая строка, то возвращается то, что после && */}
             {successMessage && (
-                <div style={{
-                    position: 'fixed',
-                    top: '10px',
-                    left: '10px',
-                    backgroundColor: 'green',
-                    color: 'white',
-                    padding: '10px',
-                    borderRadius: '5px',
-                    zIndex: 1000
-                }}>
+                <div className={'success-message'}>
                     {successMessage}
                 </div>
             )}
@@ -318,50 +364,37 @@ export default function BookingSystem() {
                     </div>
                 </div>
 
-                {/* Секция броний пользователя */}
+                {/* Секция информации о бронях пользователя */}
                 <div>
-                    <div className="booking-container">
-                        <div className="booking-card">
-                            <h3>Информация о бронировании</h3>
-                            <div className="booking-info">
-                                <p><span>Место:</span> {bookingData.place}</p>
-                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                            </div>
-                            <div className="booking-actions">
-                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                            </div>
-                        </div>
-                        <div className="booking-card">
-                            <h3>Информация о бронировании</h3>
-                            <div className="booking-info">
-                                <p><span>Место:</span> {bookingData.place}</p>
-                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                            </div>
-                            <div className="booking-actions">
-                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                            </div>
-                        </div>
-                        <div className="booking-card">
-                            <h3>Информация о бронировании</h3>
-                            <div className="booking-info">
-                                <p><span>Место:</span> {bookingData.place}</p>
-                                <p><span>Начало брони:</span> {bookingData.startTime}</p>
-                                <p><span>Конец брони:</span> {bookingData.endTime}</p>
-                                <p><span>Продолжительность:</span> {bookingData.duration}</p>
-                            </div>
-                            <div className="booking-actions">
-                                <button className="cancel-btn" onClick={handleCancel}>Отменить</button>
-                                <button className="edit-btn" onClick={handleEdit}>Изменить</button>
-                            </div>
-                        </div>
+                    <div className="big-box">
+                        <h2>Ваши бронирования</h2>
                     </div>
+
+                    {userBookings.length > 0 ? (
+                        <div className="booking-container">
+                            {userBookings.map(booking => (
+                                <div key={booking.id} className="booking-card">
+                                    <h3>Информация о бронировании ({booking.id})</h3>
+                                    <div className="booking-info">
+                                        <p><span>Место:</span> {booking.id_place}</p>
+                                        <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
+                                        <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
+                                        <p><span>Продолжительность:</span> {booking.duration} минут</p>
+                                    </div>
+                                    <div className="booking-actions">
+                                        <button
+                                            className="cancel-btn"
+                                            onClick={() => handleCancel(booking.id)}>Отменить</button>
+                                        <button className="edit-btn">Изменить</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className={'input-container'}><p className="no-bookings">У вас нет активных бронирований</p></div>
+                    )}
                 </div>
+
             </div> // конец контейнера, содержащего все что доступно после авторизации
                 )}
 
