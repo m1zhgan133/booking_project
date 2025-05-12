@@ -307,6 +307,27 @@ def get_user_():
             return error_response('Пользователь с такими данными не найден', 404)
 
 
+# ---------------------------- user ----------------------------
+def is_admin(username, password):
+    try:
+        if password == os.getenv("admin_password") and username == os.getenv("admin_username"):
+            return True
+        else:
+            return False
+    except:
+        return False # некорректный ввод
+
+@app.route('/api/is_admin', methods=['POST'])
+def is_admin_():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if is_admin(username, password):
+        return jsonify({'message': 'Вы успешно авторизованы под учетной записью админа'})
+    else:
+        return error_response('Неверный username или пароль', 401)
+
 
 
 if __name__ == '__main__':

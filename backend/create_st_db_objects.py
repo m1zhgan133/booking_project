@@ -1,7 +1,6 @@
 from interaction_with_db import *
 
 
-# create_user(os.getenv("admin_password"), os.getenv("admin_username")) # будет admin
 # create_user('name1', 'password1')
 # create_user('name2', 'password2')
 # create_user('name3', 'password3')
