@@ -487,7 +487,7 @@ export default function BookingSystem() {
                             {userBookings.map((booking) => (
                                 <React.Fragment key={booking.id}>
                                     <div className="booking-card">
-                                        <h3>Информация о бронировании ({booking.id})</h3>
+                                        <h3>Информация о брони {booking.id}</h3>
                                         <div className="booking-info">
                                             <p><span>Место:</span> {booking.id_place}</p>
                                             <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
@@ -508,6 +508,7 @@ export default function BookingSystem() {
                                     </div>
                                     {editingBookingId === booking.id && (
                                         <div className="edit-container">
+                                            <h3>Редактирование брони {booking.id}</h3>
                                             {/* Первая строка - галочки */}
                                             <div className="checkbox-row">
                                                 <label className="checkbox-label">

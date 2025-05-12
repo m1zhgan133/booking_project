@@ -107,6 +107,7 @@ def create_booking_():
 
     response = requests.get('http://localhost:5000/api/booking',
         params={'start': st_datetime_str, 'duration': duration, 'request_type':'range'})
+    print(response.json())
     if response.status_code != 200:
         return error_response('Не удалось проверить доступность места',400)
     if not response.json()['seats'].get(str(id_place), False):
