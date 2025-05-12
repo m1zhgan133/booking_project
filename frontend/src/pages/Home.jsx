@@ -23,6 +23,8 @@ export default function BookingSystem() {
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
 
+    // Состояние для карточек с инфой о бронях пользователя
+    const [userBookings, setUserBookings] = useState([]);
     // Состояния для кнопки изменить в карточках
     const [editingBookingId, setEditingBookingId] = useState(0);
 
@@ -32,7 +34,6 @@ export default function BookingSystem() {
         start: false,
         duration: false
     });
-
     const [formData, setFormData] = useState({
         place: '',
         start: "2025-04-30T14:30",
@@ -42,17 +43,17 @@ export default function BookingSystem() {
     const checkAvailability = async () => {
         try {
             const response = await fetch(`/api/booking?start=${startTime}&end=${endTime}&request_type=range`);
-            if (!response.ok) {
+            if (response.ok) {
+                const data = await response.json();
+                const newStatus = [...seatsStatus]; // копируем
+                for (let i = 1; i < 21; i++) {
+                    newStatus[i-1] = data.seats[i] ? "Свободно" : "Занято";
+                }
+                setSeatsStatus(newStatus); //обновляем
+            } else {
                 const errorData = await response.json();
                 throw new Error(errorData.error ||'Ошибка при получении данных');
             }
-
-            const data = await response.json();
-            const newStatus = [...seatsStatus]; // копируем
-            for (let i = 1; i < 21; i++) {
-                newStatus[i-1] = data.seats[i] ? "Свободно" : "Занято";
-            }
-            setSeatsStatus(newStatus); //обновляем
         } catch (error) {
             console.error("Ошибка:", error);
             alert("Произошла ошибка при проверке мест");
@@ -74,7 +75,7 @@ export default function BookingSystem() {
 
         try {
             const response = await fetch(`/api/user?username=${username}&password=${password}`);
-            if (response.status === 200) {
+            if (response.ok) {
                 authDataRef.current = {username, password};
                 setSuccessMessage("Вы успешно авторизовались");
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
@@ -139,13 +140,7 @@ export default function BookingSystem() {
         }
     };
     // ---------------------------- Информация о бронированиях ----------------------------
-    // const [bookingData, setBookingData] = useState({
-    //     place: "12",
-    //     startTime: "2023-06-15 14:00",
-    //     endTime: "2023-06-15 16:00",
-    //     duration: "2 часа"
-    // });
-    const [userBookings, setUserBookings] = useState([]);
+
 
     const fetchUserBookings = async () => {
         try {
@@ -153,12 +148,12 @@ export default function BookingSystem() {
                 method: 'GET'
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                alert(errorData.error || "Ошибка при загрузке бронирований");
-            } else {
+            if (response.ok) {
                 const data = await response.json();
                 setUserBookings(data.bookings || []);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Ошибка при загрузке бронирований");
             }
         } catch (error) {
             console.error("Ошибка:", error);
@@ -222,8 +217,8 @@ export default function BookingSystem() {
         } else {
             setFormData({
                 place: IdPlace,
-                start: stDatetime.replace(' ', 'T'), // Форматируем дату
-                duration: formatDuration(duration) //minutesToTimeFormat(booking.duration) // Конвертируем минуты в "HH:MM"
+                start: stDatetime.replace(' ', 'T'),
+                duration: formatDuration(duration) // Конвертируем минуты в HH:MM
             });
             setCheckboxes({
                 place: false,
