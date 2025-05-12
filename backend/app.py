@@ -97,7 +97,7 @@ def create_booking_():
     if not (username and password and duration and id_place):
         return error_response('Одно из обязательных полей не заполнено', 400)
     try:
-        if int(duration)<0 or int(id_place) < 1 or int(id_place) > 20:
+        if int(duration)<=0 or int(id_place) < 1 or int(id_place) > 20:
             return error_response('Недопустимые значения', 400)
     except: return error_response('Недопустимые значения', 400)
 
@@ -110,7 +110,7 @@ def create_booking_():
     if response.status_code != 200:
         return error_response('Не удалось проверить доступность места',400)
     if not response.json()['seats'].get(str(id_place), False):
-        return error_response('Место уже занято',400)
+        return error_response('Место уже занято на это время',400)
 
 
     new_book = create_booking(id_user=sender_user['id'], id_place=id_place, datetime_str=st_datetime_str, duration_minutes=duration)
@@ -132,6 +132,7 @@ def get_booking_():
         st_time_str = request.args.get('start')
         en_time_str = request.args.get('end')
         duration = request.args.get('duration')
+        not_include_id = request.args.get('not_include_id', -1)
 
         # проверяем соответствие формату
         if not is_datetime(st_time_str):
@@ -156,7 +157,7 @@ def get_booking_():
                 i: True
                 for i in range(1, 21)
             }
-            all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str)
+            all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str, not_include_id=not_include_id)
             occupied_places = set([b['id_place'] for b in all_bookings])
             for place in occupied_places:
                 seats[int(place)] = False
@@ -169,9 +170,66 @@ def get_booking_():
     elif not request_type: return error_response('Функция пока не реализованна', 501)
 
 
-# @app.route('/api/booking', methods=['PUT'])
-# def get_booking():
-#     return
+@app.route('/api/booking', methods=['PATCH'])
+def update_booking_():
+    data = request.get_json()
+    booking_id = data.get('booking_id')
+    username = data.get('username')
+    password = data.get('password')
+
+    id_place = data.get('place')
+    st_datetime = data.get('start')
+    duration = data.get('duration')
+    #                                       проверки
+    # проверяем дату и продолжительность
+    if duration:
+        try:
+            duration = str_time_to_minutes(duration)
+            if duration == -1:
+                return error_response('Неверный формат длительности брони', 400)
+            if not is_datetime(st_datetime):
+                return error_response('Неверный формат даты', 400)
+            if not (not duration and (duration != 0)) and int(duration)<=0:
+                return error_response('Недопустимые значения продолжительности', 400)
+        except:
+            return error_response('Недопустимые значения продолжительности', 400)
+    # проверяем корректность duration, id_place и booking_id
+    try:
+        if id_place and (int(id_place) < 1 or int(id_place) > 20):
+            return error_response('Недопустимые значения номера места', 400)
+        int(booking_id)
+    except: return error_response('Недопустимые значения', 400)
+
+    # проверяем свободность места для новых данных
+    response = requests.get('http://localhost:5000/api/booking',
+                            params={'start': st_datetime, 'duration': duration, 'request_type': 'range', 'not_include_id': booking_id})
+    if response.status_code != 200:
+        return error_response('Не удалось проверить доступность места', 400)
+    if not response.json()['seats'].get(str(id_place), False):
+        return error_response('Место уже занято на это время', 400)
+
+    # проверяем корректность username и password
+    m, code = is_user_data_correct(username, password)
+    if code != 200:
+        return error_response(m, code)
+
+    # Проверяем существует ли такой user и обновляем
+    user = get_user(name=username, password=password)
+    if user and user['name'] == username and user['password'] == password:
+        is_updated = update_booking(booking_id, {
+            'id_place': id_place,
+            'st_datetime': st_datetime,
+            'duration': duration
+        })
+        if is_updated:
+            return jsonify({"message": "Бронь успешно отредактирована"}), 200
+        else:
+            return error_response('Проблемы с редактировнанием брони', 400)
+    else:
+        return error_response('Пользователь с такими данными не найден', 404)
+
+
+
 @app.route('/api/booking', methods=['DELETE'])
 def delete_booking():
     data = request.get_json()

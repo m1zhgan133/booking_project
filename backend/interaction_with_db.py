@@ -167,7 +167,7 @@ def create_booking(id_user, id_place, datetime_str, duration_minutes=120):
 
 
 
-def get_bookings_by_datetime_range(start_str, end_str):
+def get_bookings_by_datetime_range(start_str, end_str, not_include_id=-1):
     session = SessionLocal()
     try:
         start = datetime.fromisoformat(start_str)
@@ -187,7 +187,7 @@ def get_bookings_by_datetime_range(start_str, end_str):
             "st_datetime": b.st_datetime.isoformat(),
             "en_datetime": b.en_datetime.isoformat(),
             "duration": b.duration
-        } for b in bookings]
+        } for b in bookings if b.id != int(not_include_id)]
     except: return False
     finally: session.close()
 

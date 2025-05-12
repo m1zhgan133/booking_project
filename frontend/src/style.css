@@ -22,7 +22,7 @@ div {
 
 input {
     padding: 10px;
-    border: 2px solid mediumorchid;
+    border: 2px; /*solid mediumorchid;*/
     border-radius: 5px;
     font-size: 16px;
     background-color: #f8f8f8;
@@ -186,6 +186,43 @@ button:hover {
     margin: 10px 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
+
+/*кнопка изменить*/
+.edit-container {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    margin: 0 auto;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    grid-column: span 2;
+}
+
+.checkbox-row {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    padding: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.input-row {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+}
+
+.input-block {
+    display: flex;
+    flex-direction: column;
+}
+
 /*---------------------------- Другие страницы ----------------------------*/
 /*Страница регистрации*/
 #registration-inputs-title label {
