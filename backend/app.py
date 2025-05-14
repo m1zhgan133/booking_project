@@ -12,6 +12,8 @@ DATABASE_URL = os.getenv(
     "postgresql://myuser:mypassword@localhost:5432/mydatabase"
     # postgresql://<username>:<password>@<host>:<port>/<database_name>
 )
+admin_password = os.getenv("admin_password")
+admin_username = os.getenv("admin_username")
 
 # Общая функции для возврата ошибки в формате json
 def error_response(message, status_code):
@@ -87,7 +89,8 @@ def create_booking_():
     duration = data.get('duration')
     id_place = data.get('id_place')
 
-    print(data, username, password, st_datetime_str, duration, id_place)
+    user_id = data.get('user_id')
+
 
     duration = str_time_to_minutes(duration)
     if duration == -1:
@@ -101,7 +104,12 @@ def create_booking_():
             return error_response('Недопустимые значения', 400)
     except: return error_response('Недопустимые значения', 400)
 
-    sender_user = get_user(name=username, password=password)
+    # проверка на админа
+    if user_id and is_admin(username, password):
+        sender_user = get_user(id=user_id, is_admin=True)
+    else:
+        sender_user = get_user(name=username, password=password)
+
     if not sender_user:
         return error_response('Пользователь с таким именем и паролем не найден', 404)
 
@@ -112,7 +120,6 @@ def create_booking_():
         return error_response('Не удалось проверить доступность места',400)
     if not response.json()['seats'].get(str(id_place), False):
         return error_response('Место уже занято на это время',400)
-
 
     new_book = create_booking(id_user=sender_user['id'], id_place=id_place, datetime_str=st_datetime_str, duration_minutes=duration)
     if new_book:
@@ -216,7 +223,7 @@ def update_booking_():
 
     # Проверяем существует ли такой user и обновляем
     user = get_user(name=username, password=password)
-    if user and user['name'] == username and user['password'] == password:
+    if (user and user['name'] == username and user['password'] == password) or is_admin(username, password):
         is_updated = update_booking(booking_id, {
             'id_place': id_place,
             'st_datetime': st_datetime,
@@ -244,7 +251,7 @@ def delete_booking():
 
     # Проверяем существует ли такой user
     user = get_user(name=username, password=password)
-    if user and user['name'] == username and user['password'] == password:
+    if (user and user['name'] == username and user['password'] == password) or is_admin(username, password):
         if delete_booking_by_id(booking_id):
             return jsonify({"message": 'Пользователь был успешно удален'}), 204
         else:
@@ -288,7 +295,9 @@ def get_user_():
     if request_type not in ('all', None):
         return error_response('Некорректный тип запроса', 400)
 
-    if request_type and request_type == 'all': return error_response('Функция пока не реализованна', 501)
+    if request_type and request_type == 'all':
+        all_bookings = get_all_bookings()
+        return jsonify(all_bookings), 200
 
     if not request_type:
         username = request.args.get('username')
@@ -310,7 +319,7 @@ def get_user_():
 # ---------------------------- user ----------------------------
 def is_admin(username, password):
     try:
-        if password == os.getenv("admin_password") and username == os.getenv("admin_username"):
+        if password == admin_password and username == admin_username:
             return True
         else:
             return False

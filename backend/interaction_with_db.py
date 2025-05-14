@@ -57,7 +57,7 @@ def create_user(name, password) -> bool:
     except: return False
     finally: session.close()
 
-def get_user(name=None, password=None, id=None):
+def get_user(name=None, password=None, id=None, is_admin=False):
     session = SessionLocal()
     try:
         if not (name or password or id):
@@ -90,7 +90,7 @@ def get_user(name=None, password=None, id=None):
         return {
             "id": user.id,
             "name": user.name,
-            "password": user.password if password else None,
+            "password": user.password if (password or is_admin) else None,
             "bookings": user_bookings
         }
     except: return False

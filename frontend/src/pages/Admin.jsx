@@ -9,6 +9,7 @@ export default function Admin() {
 
     //Состояния для авторизации
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userId, setUserId] = useState(""); // новое, не из этого файла
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const authDataRef = useRef({
@@ -26,7 +27,7 @@ export default function Admin() {
     const [errors, setErrors] = useState({});
     const [successMessage, setSuccessMessage] = useState("");
 
-    // Состояние для карточек с инфой о бронях пользователя
+    // Состояние для карточек с инфой о бронях
     const [userBookings, setUserBookings] = useState([]);
     // Состояния для кнопки изменить в карточках
     const [editingBookingId, setEditingBookingId] = useState(0);
@@ -93,7 +94,7 @@ export default function Admin() {
                 setUsername("");
                 setPassword("");
                 setIsLoggedIn(true);
-                // fetchUserBookings();
+                fetchUserBookings();
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Произошла ошибка при авторизации под записью админа, вы ввели некорректные данные");
@@ -104,63 +105,64 @@ export default function Admin() {
         }
     }
 
-    const handleBooking = async () => {
+const handleBooking = async () => {
         // проверяем все ли поля заполненны, если не заполненно подсвечиваем красным
-        const newErrors = {
-            bookingStartTime: !bookingStartTime,
-            duration: !duration,
-            seatNumber: !seatNumber
-        };
-        // Проверяем, есть ли true
-        const hasErrors = Object.values(newErrors).some(Boolean);
-        if (hasErrors) {
-            setErrors(newErrors);
-            return;
-        }
-        setErrors({}); // Сброс ошибок
+    const newErrors = {
+        userId: !userId,
+        bookingStartTime: !bookingStartTime,
+        duration: !duration,
+        seatNumber: !seatNumber
+    };
+    // Проверяем, есть ли true
+    const hasErrors = Object.values(newErrors).some(Boolean);
+    if (hasErrors) {
+        setErrors(newErrors);
+        return;
+    }
+    setErrors({}); // Сброс ошибок
 
-        try {
-            const response = await fetch('/api/booking', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username: authDataRef.current.username,
-                    password: authDataRef.current.password,
-                    st_datetime: bookingStartTime,
-                    duration: duration,
-                    id_place: seatNumber,
-                })
-            });
+    try {
+        const response = await fetch('/api/booking', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: authDataRef.current.username,
+                password: authDataRef.current.password,
+                st_datetime: bookingStartTime,
+                duration: duration,
+                id_place: seatNumber,
+                user_id: userId,
+            })
+        });
 
-            if (response.ok) {
-                setSuccessMessage("Запись успешно создана");
+        if (response.ok) {
+            setSuccessMessage("Запись успешно создана");
                 setTimeout(() => setSuccessMessage(""), 10000); // Сообщение исчезнет через 10 секунд
                 // Сброс формы после бронирования
-                setSeatNumber("");
-                await fetchUserBookings();
-            } else {
-                const errorData = await response.json();
-                alert(errorData.error || "Произошла ошибка при бронировании");
-            }
-        } catch (error) {
-            console.error("Ошибка:", error);
-            alert("Произошла ошибка при бронировании");
+            setSeatNumber("");
+            setUserId("");
+            await fetchUserBookings();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.error || "Произошла ошибка при бронировании");
         }
-    };
+    } catch (error) {
+        console.error("Ошибка:", error);
+        alert("Произошла ошибка при бронировании");
+    }
+};
     // ---------------------------- Информация о бронированиях ----------------------------
-
-
     const fetchUserBookings = async () => {
         try {
-            const response = await fetch(`/api/user?username=${authDataRef.current.username}&password=${authDataRef.current.password}`, {
+            const response = await fetch(`/api/user?username=${authDataRef.current.username}&password=${authDataRef.current.password}&request_type=all`, {
                 method: 'GET'
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setUserBookings(data.bookings || []);
+                setUserBookings(data || []);
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Ошибка при загрузке бронирований");
@@ -305,6 +307,30 @@ export default function Admin() {
         }
     };
 
+    // ----------------------------------------------- Пользователи --------------------------------------------------------
+    // const [usersList, setUsersList] = useState([]);
+    //
+    // const fetchUsers = async () => {
+    //     try {
+    //         const response = await fetch(`/api/users?username=${authDataRef.current.username}&password=${authDataRef.current.password}`, {
+    //             method: 'GET'
+    //         });
+    //
+    //         if (response.ok) {
+    //             const data = await response.json();
+    //             setUsersList(data || []);
+    //         } else {
+    //             const errorData = await response.json();
+    //             alert(errorData.error || "Ошибка при загрузке пользователей");
+    //         }
+    //     } catch (error) {
+    //         console.error("Ошибка:", error);
+    //         alert("Не удалось загрузить список пользователей");
+    //     }
+    // };
+
+
+
     return (
         <div>
             {/*// сообщение успешное бронирование*/}
@@ -360,6 +386,7 @@ export default function Admin() {
                     </Link>
                 </div>
             ) : (
+                <div>
                 <div className="input-container">
                     <div>
                         <button onClick={() => setIsUserMenu(false)}
@@ -367,6 +394,7 @@ export default function Admin() {
                         <button onClick={() => setIsUserMenu(true)}
                                 style={{border: isUserMenu ? '3px solid black' : 'none',}}>Пользователи</button>
                     </div>
+                </div>
                     {!isUserMenu ? (
                         <div> {/*  начало контейнира содержащего все что доступно после авторизации */}
                                  <div className="big-box">
@@ -446,6 +474,19 @@ export default function Admin() {
                                             <h2>Забронировать место</h2>
                                         </div>
                                         <div className="input-container" id="booking-inputs-title">
+                                            <label>ID пользователя</label>
+                                            <input
+                                                type="text"
+                                                id="user-id"
+                                                name="user-id"
+                                                placeholder="Введите ID пользователя"
+                                                value={userId}
+                                                onChange={(e) => setUserId(e.target.value)}
+                                                style={{ boxShadow: errors.userId
+                                                        ? '0 0 0 2px red'
+                                                        : '0 4px 8px rgba(0, 0, 0, 0.2)'}}
+                                            />
+
                                             <label>Выберите место (1-20)</label>
                                             <input
                                                 type="number"
@@ -489,10 +530,10 @@ export default function Admin() {
                                         </div>
                                     </div>
 
-                                    {/* Секция информации о бронях пользователя */}
+                                    {/* Секция информации о бронях пользователей */}
                                     <div>
                                         <div className="big-box">
-                                            <h2>Ваши бронирования</h2>
+                                            <h2>Все бронирования</h2>
                                         </div>
 
                                         {userBookings.length > 0 ? (
@@ -502,6 +543,7 @@ export default function Admin() {
                                                         <div className="booking-card">
                                                             <h3>Информация о брони {booking.id}</h3>
                                                             <div className="booking-info">
+                                                                <p><span>ID пользователя:</span> {booking.id_user}</p>
                                                                 <p><span>Место:</span> {booking.id_place}</p>
                                                                 <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
                                                                 <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
@@ -615,9 +657,136 @@ export default function Admin() {
                                         )}
                                     </div>
 
-                                </div> // конец контейнера, содержащего все что доступно после авторизации
+                                </div> // конец контейнера, содержащего все что доступно после авторизации в одной из вкладок
                         ) : (
-                        <div>юз</div>
+                        <div>
+                            {/* Секция информации о пользователях */}
+                            <div>
+                                <div className="big-box">
+                                    <h2>Все пользователи</h2>
+                                </div>
+
+                                {userBookings.length > 0 ? (
+                                    <div className="booking-container">
+                                        {userBookings.map((booking) => (
+                                            <React.Fragment key={booking.id}>
+                                                <div className="booking-card">
+                                                    <h3>Информация о брони {booking.id}</h3>
+                                                    <div className="booking-info">
+                                                        <p><span>ID пользователя:</span> {booking.id_user}</p>
+                                                        <p><span>Место:</span> {booking.id_place}</p>
+                                                        <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
+                                                        <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
+                                                        <p><span>Продолжительность:</span> {booking.duration} минут</p>
+                                                    </div>
+                                                    <div className="booking-actions">
+                                                        <button
+                                                            className="cancel-btn"
+                                                            onClick={() => handleCancel(booking.id)}>Отменить</button>
+                                                        <button
+                                                            className="edit-btn"
+                                                            onClick={() => handleEdit(booking.id, booking.id_place,
+                                                                booking.st_datetime, booking.duration)}>
+                                                            {editingBookingId === booking.id ? 'Закрыть' : 'Изменить'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {editingBookingId === booking.id && (
+                                                    <div className="edit-container">
+                                                        <h3>Редактирование брони {booking.id}</h3>
+                                                        {/* Первая строка - галочки */}
+                                                        <div className="checkbox-row">
+                                                            <label className="checkbox-label">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="place"
+                                                                    checked={checkboxes.place}
+                                                                    onChange={handleCheckboxChange}
+                                                                />
+                                                                Место
+                                                            </label>
+
+                                                            <label className="checkbox-label">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="start"
+                                                                    checked={checkboxes.start}
+                                                                    onChange={handleCheckboxChange}
+                                                                />
+                                                                Начало
+                                                            </label>
+
+                                                            <label className="checkbox-label">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="duration"
+                                                                    checked={checkboxes.duration}
+                                                                    onChange={handleCheckboxChange}
+                                                                />
+                                                                Длительность
+                                                            </label>
+                                                        </div>
+
+                                                        {/* Вторая строка - блоки ввода */}
+                                                        <div className="input-row">
+                                                            {checkboxes.place && (
+                                                                <div className="input-block">
+                                                                    <label>Место(1-20):</label>
+                                                                    <input
+                                                                        type="number"
+                                                                        name="place"
+                                                                        placeholder="Номер"
+                                                                        min="1"
+                                                                        max="20"
+                                                                        value={formData.place}
+                                                                        onChange={handleInputChange}
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {checkboxes.start && (
+                                                                <div className="input-block">
+                                                                    <label>Начало:</label>
+                                                                    <input
+                                                                        type="datetime-local"
+                                                                        name="start"
+                                                                        value={formData.start}
+                                                                        min="2025-04-01T00:00"
+                                                                        max="2025-12-31T23:59"
+                                                                        step="900"
+                                                                        onChange={handleInputChange}
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {checkboxes.duration && (
+                                                                <div className="input-block">
+                                                                    <label>Длительность:</label>
+                                                                    <input
+                                                                        type="time"
+                                                                        name="duration"
+                                                                        value={formData.duration}
+                                                                        min="00:00"
+                                                                        max="23:59"
+                                                                        step="900"
+                                                                        onChange={handleInputChange}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        {/* 3 строка - ввод*/}
+                                                        <button className="edit-btn"
+                                                                onClick={handleSubmit}>Отредактировать</button>
+                                                    </div>
+                                                )}
+                                            </React.Fragment>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className={'input-container'}><p className="no-bookings">У вас нет активных бронирований</p></div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
             )}

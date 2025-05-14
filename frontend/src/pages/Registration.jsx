@@ -36,7 +36,7 @@ export default function Registration() {
             });
 
             if (response.status === 201) {
-                setTimeout(() => navigate('/thank-you'), 1_000); // Сообщение исчезнет через 10 секунд
+                setTimeout(() => navigate('/thank-you'), 100);
                 // Сброс формы после бронирования
                 setUsername("");
                 setPassword("");
