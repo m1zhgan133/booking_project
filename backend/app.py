@@ -43,7 +43,7 @@ def str_time_to_minutes(time_str: str) -> int:
     except:
         return -1
 
-def add_minutes_to_datetime(start_datetime_str: str, minutes: int|str) -> str:
+def add_minutes_to_datetime(start_datetime_str: str, minutes) -> str:
         try:
             minutes = int(minutes)
             start_datetime = datetime.fromisoformat(start_datetime_str)
@@ -409,4 +409,4 @@ def is_admin_():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)

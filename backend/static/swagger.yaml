@@ -4,6 +4,8 @@ info:
   description: "API для управления бронированием мест и пользователями"
   version: "1.0.0"
 servers:
+  - url: "/api"
+  - url: "http://backend:5000/api"
   - url: "http://localhost:5000/api"
 paths:
   /booking:

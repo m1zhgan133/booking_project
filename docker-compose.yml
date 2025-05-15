@@ -1,33 +1,57 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres:16.0
+    image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data.sql
+    networks:
+      - booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-#      - postgres_data:/var/lib/postgresql/data
-#      - ./init.sql:/docker-entrypoint-initdb.d/data.sql
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - admin_username=${admin_username}
+      - admin_password=${admin_password}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/static:/app/static
+    networks:
+      - booking-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"    # 2. Порт оставляем как есть (3000 для dev-сервера)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # 3. Добавляем том для node_modules
+    environment:
+      - NODE_ENV=development  # 4. Явно указываем окружение
+    depends_on:
+      - backend
+    networks:
+      - booking-network
+
 volumes:
   postgres_data:
-#  backend:
-#    build: ./backend
-#    ports:
-#      - "5000:5000"
-#    depends_on:
-#      - db
-#    environment:
-#      DATABASE_URL: postgresql://postgres:postgres@db:5432/coworking
-#      FLASK_ENV: development
-#
 
-#
+networks:
+  booking-network:
+    driver: bridge
