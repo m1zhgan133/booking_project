@@ -36,10 +36,7 @@ export default function Registration() {
             });
 
             if (response.status === 201) {
-                setTimeout(() => navigate('/thank-you'), 100);
-                // Сброс формы после бронирования
-                setUsername("");
-                setPassword("");
+                navigate('/thank-you')
             } else {
                 const errorData = await response.json();
                 alert(errorData.error || "Произошла ошибка при регистрации");

@@ -8,8 +8,12 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import os
 
+
+
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
+admin_password = os.getenv("admin_password")
+admin_username = os.getenv("admin_username")
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -97,7 +101,7 @@ def get_user(name=None, password=None, id=None, is_admin=False):
     finally: session.close()
 
 
-def get_all_users():
+def get_all_users(password=''):
     session = SessionLocal()
     try:
         users = session.query(User).all()
@@ -106,7 +110,7 @@ def get_all_users():
             users_list.append({
                 "id": user.id,
                 "name": user.name,
-                # "password": user.password
+                "password": user.password if password == admin_password else None
             })
         return users_list
     except: return False

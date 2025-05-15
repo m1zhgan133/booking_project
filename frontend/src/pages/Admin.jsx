@@ -156,7 +156,7 @@ const handleBooking = async () => {
     // ---------------------------- Информация о бронированиях ----------------------------
     const fetchUserBookings = async () => {
         try {
-            const response = await fetch(`/api/user?username=${authDataRef.current.username}&password=${authDataRef.current.password}&request_type=all`, {
+            const response = await fetch(`/api/booking?username=${authDataRef.current.username}&password=${authDataRef.current.password}&request_type=all`, {
                 method: 'GET'
             });
 
@@ -308,28 +308,148 @@ const handleBooking = async () => {
     };
 
     // ----------------------------------------------- Пользователи --------------------------------------------------------
-    // const [usersList, setUsersList] = useState([]);
-    //
-    // const fetchUsers = async () => {
-    //     try {
-    //         const response = await fetch(`/api/users?username=${authDataRef.current.username}&password=${authDataRef.current.password}`, {
-    //             method: 'GET'
-    //         });
-    //
-    //         if (response.ok) {
-    //             const data = await response.json();
-    //             setUsersList(data || []);
-    //         } else {
-    //             const errorData = await response.json();
-    //             alert(errorData.error || "Ошибка при загрузке пользователей");
-    //         }
-    //     } catch (error) {
-    //         console.error("Ошибка:", error);
-    //         alert("Не удалось загрузить список пользователей");
-    //     }
-    // };
+    //Статусы
+    const [usersList, setUsersList] = useState([]);
+    const [editingUserId, setEditingUserId] = useState(null);
+    const [userCheckboxes, setUserCheckboxes] = useState({
+        username: false,
+        password: false
+    });
+    const [userFormData, setUserFormData] = useState({
+        username: '',
+        password: ''
+    });
+    const [isSpoilerOpen, setIsSpoilerOpen] = useState(false);
 
 
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch(`/api/user?username=${authDataRef.current.username}&password=${authDataRef.current.password}&request_type=all`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setUsersList(data || []);
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Ошибка при загрузке пользователей");
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Не удалось загрузить список пользователей");
+        }
+    };
+
+    const handleUserDelete = async (userId) => {
+        if (!window.confirm("Вы уверены, что хотите удалить этого пользователя?")) return;
+
+        try {
+            const response = await fetch('/api/user', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: authDataRef.current.username,
+                    password: authDataRef.current.password,
+                    user_id: userId
+                })
+            });
+
+            if (response.ok) {
+                setSuccessMessage("Пользователь успешно удален");
+                setTimeout(() => setSuccessMessage(""), 5000);
+                await fetchUsers();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Ошибка при удалении пользователя");
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при удалении пользователя");
+        }
+    };
+
+
+    const handleUserEdit = (userId, username) => {
+        if (userId === editingUserId) {
+            setEditingUserId(null);
+        } else {
+            setUserFormData({
+                username: username,
+                password: ''
+            });
+            setUserCheckboxes({
+                username: false,
+                password: false
+            });
+            setEditingUserId(userId);
+        }
+    };
+
+    const handleUserCheckboxChange = (e) => {
+        const { name, checked } = e.target;
+        setUserCheckboxes(prev => ({
+            ...prev,
+            [name]: checked
+        }));
+    };
+
+    const handleUserInputChange = (e) => {
+        const { name, value } = e.target;
+        setUserFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleUserSubmit = async () => {
+        try {
+            const response = await fetch('/api/user', {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: authDataRef.current.username,
+                    password: authDataRef.current.password,
+                    user_id: editingUserId,
+                    ...(userCheckboxes.username && { new_username: userFormData.username }),
+                    ...(userCheckboxes.password && { new_password: userFormData.password })
+                })
+            });
+
+            if (response.ok) {
+                setSuccessMessage("Данные пользователя успешно изменены");
+                setTimeout(() => setSuccessMessage(""), 10000);
+                setEditingUserId(null);
+                await fetchUsers();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.error || "Ошибка при изменении данных пользователя");
+            }
+        } catch (error) {
+            console.error("Ошибка:", error);
+            alert("Произошла ошибка при изменении данных пользователя");
+        }
+    };
+
+    const PasswordSpoiler = ({ password }) => {
+        const [isVisible, setIsVisible] = useState(false);
+
+        return (
+            <span
+                onClick={() => setIsVisible(!isVisible)}
+            >
+                {isVisible ? (
+                    <span className="password-value">{' '} {password}</span>
+                ) : (
+                    <span className="password-placeholder">{' '} *********</span>
+                )}
+            </span>
+        );
+    };
 
     return (
         <div>
@@ -381,9 +501,6 @@ const handleBooking = async () => {
                         />
                         <button id="auth-button" onClick={auth}>Авторизоваться</button>
                     </div>
-                    <Link to="/registration">
-                        <button id="to-registration-button">Зарегистрироваться</button>
-                    </Link>
                 </div>
             ) : (
                 <div>
@@ -535,7 +652,9 @@ const handleBooking = async () => {
                                         <div className="big-box">
                                             <h2>Все бронирования</h2>
                                         </div>
-
+                                        <div className="input-container">
+                                            <button onClick={fetchUserBookings}>Обновить список</button>
+                                        </div>
                                         {userBookings.length > 0 ? (
                                             <div className="booking-container">
                                                 {userBookings.map((booking) => (
@@ -665,132 +784,104 @@ const handleBooking = async () => {
                                 <div className="big-box">
                                     <h2>Все пользователи</h2>
                                 </div>
-
-                                {userBookings.length > 0 ? (
+                                <div className="input-container">
+                                    <button onClick={fetchUsers}>Обновить список</button>
+                                </div>
+                                {usersList.length > 0 ? (
                                     <div className="booking-container">
-                                        {userBookings.map((booking) => (
-                                            <React.Fragment key={booking.id}>
+                                        {usersList.map((user) => (
+                                            <React.Fragment key={user.id}>
                                                 <div className="booking-card">
-                                                    <h3>Информация о брони {booking.id}</h3>
+                                                    <h3>Пользователь ID: {user.id}</h3>
                                                     <div className="booking-info">
-                                                        <p><span>ID пользователя:</span> {booking.id_user}</p>
-                                                        <p><span>Место:</span> {booking.id_place}</p>
-                                                        <p><span>Начало:</span> {formatDateTime(booking.st_datetime)}</p>
-                                                        <p><span>Окончание:</span> {formatDateTime(booking.en_datetime)}</p>
-                                                        <p><span>Продолжительность:</span> {booking.duration} минут</p>
+                                                        <p><span>Логин:</span> {user.name}</p>
+                                                        <p><span>Пароль:</span><PasswordSpoiler password={user.password} /></p>
                                                     </div>
                                                     <div className="booking-actions">
                                                         <button
                                                             className="cancel-btn"
-                                                            onClick={() => handleCancel(booking.id)}>Отменить</button>
+                                                            onClick={() => handleUserDelete(user.id)}>
+                                                            Удалить
+                                                        </button>
                                                         <button
                                                             className="edit-btn"
-                                                            onClick={() => handleEdit(booking.id, booking.id_place,
-                                                                booking.st_datetime, booking.duration)}>
-                                                            {editingBookingId === booking.id ? 'Закрыть' : 'Изменить'}
+                                                            onClick={() => handleUserEdit(user.id, user.username)}>
+                                                            {editingUserId === user.id ? 'Закрыть' : 'Изменить'}
                                                         </button>
                                                     </div>
                                                 </div>
-                                                {editingBookingId === booking.id && (
+
+                                                {editingUserId === user.id && (
                                                     <div className="edit-container">
-                                                        <h3>Редактирование брони {booking.id}</h3>
-                                                        {/* Первая строка - галочки */}
+                                                        <h3>Редактирование пользователя {user.id}</h3>
                                                         <div className="checkbox-row">
                                                             <label className="checkbox-label">
                                                                 <input
                                                                     type="checkbox"
-                                                                    name="place"
-                                                                    checked={checkboxes.place}
-                                                                    onChange={handleCheckboxChange}
+                                                                    name="username"
+                                                                    checked={userCheckboxes.username}
+                                                                    onChange={handleUserCheckboxChange}
                                                                 />
-                                                                Место
+                                                                Логин
                                                             </label>
 
                                                             <label className="checkbox-label">
                                                                 <input
                                                                     type="checkbox"
-                                                                    name="start"
-                                                                    checked={checkboxes.start}
-                                                                    onChange={handleCheckboxChange}
+                                                                    name="password"
+                                                                    checked={userCheckboxes.password}
+                                                                    onChange={handleUserCheckboxChange}
                                                                 />
-                                                                Начало
-                                                            </label>
-
-                                                            <label className="checkbox-label">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    name="duration"
-                                                                    checked={checkboxes.duration}
-                                                                    onChange={handleCheckboxChange}
-                                                                />
-                                                                Длительность
+                                                                Пароль
                                                             </label>
                                                         </div>
 
-                                                        {/* Вторая строка - блоки ввода */}
                                                         <div className="input-row">
-                                                            {checkboxes.place && (
+                                                            {userCheckboxes.username && (
                                                                 <div className="input-block">
-                                                                    <label>Место(1-20):</label>
+                                                                    <label>Новый логин:</label>
                                                                     <input
-                                                                        type="number"
-                                                                        name="place"
-                                                                        placeholder="Номер"
-                                                                        min="1"
-                                                                        max="20"
-                                                                        value={formData.place}
-                                                                        onChange={handleInputChange}
+                                                                        type="text"
+                                                                        name="username"
+                                                                        value={userFormData.username}
+                                                                        onChange={handleUserInputChange}
                                                                     />
                                                                 </div>
                                                             )}
 
-                                                            {checkboxes.start && (
+                                                            {userCheckboxes.password && (
                                                                 <div className="input-block">
-                                                                    <label>Начало:</label>
+                                                                    <label>Новый пароль:</label>
                                                                     <input
-                                                                        type="datetime-local"
-                                                                        name="start"
-                                                                        value={formData.start}
-                                                                        min="2025-04-01T00:00"
-                                                                        max="2025-12-31T23:59"
-                                                                        step="900"
-                                                                        onChange={handleInputChange}
-                                                                    />
-                                                                </div>
-                                                            )}
-
-                                                            {checkboxes.duration && (
-                                                                <div className="input-block">
-                                                                    <label>Длительность:</label>
-                                                                    <input
-                                                                        type="time"
-                                                                        name="duration"
-                                                                        value={formData.duration}
-                                                                        min="00:00"
-                                                                        max="23:59"
-                                                                        step="900"
-                                                                        onChange={handleInputChange}
+                                                                        type="password"
+                                                                        name="password"
+                                                                        value={userFormData.password}
+                                                                        onChange={handleUserInputChange}
                                                                     />
                                                                 </div>
                                                             )}
                                                         </div>
-                                                        {/* 3 строка - ввод*/}
-                                                        <button className="edit-btn"
-                                                                onClick={handleSubmit}>Отредактировать</button>
+                                                        <button className="edit-btn" onClick={handleUserSubmit}>
+                                                            Сохранить изменения
+                                                        </button>
                                                     </div>
                                                 )}
                                             </React.Fragment>
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className={'input-container'}><p className="no-bookings">У вас нет активных бронирований</p></div>
+                                    <div className={'input-container'}>
+                                        <p className="no-bookings">Нет зарегистрированных пользователей</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     )}
                 </div>
             )}
-
+        <Link to={'/'}>
+            <button>Перейти на главную</button>
+        </Link>
         </div>
     );
 }

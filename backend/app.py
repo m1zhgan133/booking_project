@@ -136,6 +136,13 @@ def get_booking_():
     if request_type not in ('range', 'all', None):
         return error_response('Некорректный тип запроса', 400)
 
+    if request_type and request_type == 'all':
+        username = request.args.get('username')
+        password = request.args.get('password')
+        if is_admin(username, password):
+            all_bookings = get_all_bookings()
+            return jsonify(all_bookings), 200
+
     if request_type and request_type == 'range':
         st_time_str = request.args.get('start')
         en_time_str = request.args.get('end')
@@ -174,7 +181,6 @@ def get_booking_():
         except Exception as e:
             return error_response(str(e), 400)
 
-    elif request_type and request_type == 'all': return error_response('Функция пока не реализованна', 501)
     elif not request_type: return error_response('Функция пока не реализованна', 501)
 
 
@@ -296,8 +302,11 @@ def get_user_():
         return error_response('Некорректный тип запроса', 400)
 
     if request_type and request_type == 'all':
-        all_bookings = get_all_bookings()
-        return jsonify(all_bookings), 200
+        username = request.args.get('username')
+        password = request.args.get('password')
+        if is_admin(username, password):
+            all_users = get_all_users(password)
+            return jsonify(all_users), 200
 
     if not request_type:
         username = request.args.get('username')
@@ -315,8 +324,52 @@ def get_user_():
         else:
             return error_response('Пользователь с такими данными не найден', 404)
 
+@app.route('/api/user', methods=['PATCH'])
+def update_user_():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if username and password and is_admin(username, password):
+        user_id = data.get('user_id')
+        try:
+            if int(user_id) < 0:
+                return error_response('Неккорктный user_id', 400)
+        except: return error_response('Неккорктный user_id', 400)
 
-# ---------------------------- user ----------------------------
+        update_data = {
+            'name': data.get('new_username'),
+            'password': data.get('new_password')
+        }
+
+        # проверка уникальности
+        all_users = get_all_users()
+        for u in all_users:
+            if u['name'] == update_data['name']:
+                return error_response('Пользователь с таким именем уже существует', 400)
+
+        if update_user(user_id, update_data):
+            return jsonify({'message': 'Данные пользователя успешно обновленны'}), 200
+        else:
+            return error_response('Проблемы с обновлением пользователя',400)
+
+
+@app.route('/api/user', methods=['DELETE'])
+def delete_user_():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    if username and password and is_admin(username, password):
+        user_id = data.get('user_id')
+        try:
+            if int(user_id) < 0:
+                return error_response('Неккорктный user_id', 400)
+        except: return error_response('Неккорктный user_id', 400)
+
+        if delete_user(user_id):
+            return jsonify({'message': 'Пользователь успешно удален'}), 204
+        else:
+            return error_response('Проблемы с обновлением пользователя',400)
+# ---------------------------- admin check ----------------------------
 def is_admin(username, password):
     try:
         if password == admin_password and username == admin_username:

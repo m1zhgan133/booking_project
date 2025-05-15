@@ -185,6 +185,8 @@ export default function BookingSystem() {
 
 // Функции для кнопок
     const handleCancel = async (bookingId) => {
+        if (!window.confirm("Вы уверены, что хотите отменить бронь?")) return;
+
         try {
             const response = await fetch(`/api/booking`, {
                 method: 'DELETE',
@@ -476,7 +478,9 @@ export default function BookingSystem() {
                     <div className="big-box">
                         <h2>Ваши бронирования</h2>
                     </div>
-
+                    <div className="input-container">
+                        <button onClick={fetchUserBookings}>Обновить список</button>
+                    </div>
                     {userBookings.length > 0 ? (
                         <div className="booking-container">
                             {userBookings.map((booking) => (
