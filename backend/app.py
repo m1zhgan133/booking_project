@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 import re
 import requests
+from flask_swagger_ui import get_swaggerui_blueprint
 from interaction_with_db import * # мое
 # ------------------------------- Вспомогательные функции -------------------------------
 DATABASE_URL = os.getenv(
@@ -75,6 +76,21 @@ app = Flask(__name__)
 with app.app_context():
     wait_for_db()
     initialize_database()
+
+# Настройка Swagger UI
+SWAGGER_URL = '/swagger'  # URL для Swagger UI
+API_URL = '/static/swagger.yaml'  # Путь к вашему файлу swagger.yaml
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': "My Flask API"
+    }
+)
+
+# Регистрация маршрута для Swagger UI
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
+
 
 # ------------------------------------------------------- основные функции
 
