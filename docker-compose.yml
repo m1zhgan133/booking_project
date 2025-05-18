@@ -1,4 +1,4 @@
-version: '3.8'
+#version: '3.8'
 
 services:
   db:
@@ -7,6 +7,7 @@ services:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_DATABASES_TEST=${DB_NAME},${DB_NAME}_test
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -34,6 +35,12 @@ services:
       - ./backend/static:/app/static
     networks:
       - booking-network
+#    healthcheck:
+#      test: ["CMD", "curl", "-f", "http://backend:5000/api/health"]
+#      interval: 5s
+#      timeout: 5s
+#      retries: 5
+#      start_period: 20s
 
   frontend:
     build: ./frontend
@@ -48,6 +55,41 @@ services:
       - backend
     networks:
       - booking-network
+
+  db_test:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}_test
+    networks:
+      - booking-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}_test" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - DATABASE_URL_TEST=postgresql://${DB_USER}:${DB_PASSWORD}@db_test:5432/${DB_NAME}_test
+      - PYTEST_RUNNING=true
+      - TESTING=true
+      - admin_username=testadmin
+      - admin_password=testadminpass
+    depends_on:
+      db_test:
+        condition: service_healthy
+    networks:
+      - booking-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

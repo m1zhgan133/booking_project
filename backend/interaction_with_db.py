@@ -11,11 +11,18 @@ import os
 
 
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
+
 admin_password = os.getenv("admin_password")
 admin_username = os.getenv("admin_username")
 
+if os.getenv('PYTEST_RUNNING') == 'true':
+    DATABASE_URL = os.getenv("DATABASE_URL_TEST")
+else:
+    DATABASE_URL = os.getenv("DATABASE_URL")
+
+
 engine = create_engine(DATABASE_URL)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
@@ -28,7 +35,7 @@ class User(Base):
     name = Column(String(64), nullable=False)
     password = Column(String(64), nullable=False)
 
-    bookings = relationship("Booking", back_populates="user")
+    bookings = relationship("Booking", back_populates="user", cascade="all, delete-orphan")
 
 
 class Booking(Base):
