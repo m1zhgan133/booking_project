@@ -1,48 +1,40 @@
-image: docker:latest
-
-services:
-  - docker:dind
-  - postgres:16-alpine
-
-variables:
-  IMAGE_NAME: $CI_REGISTRY_IMAGE:latest
-  DOCKER_HOST: tcp://docker:2375
-  POSTGRES_DB: test_db
-  POSTGRES_USER: runner
-  POSTGRES_PASSWORD: secure_password
-
 stages:
   - build
   - test
   - deploy
 
-build_image:
+variables:
+  DOCKER_HOST: tcp://docker:2375
+
+services:
+  - docker:dind
+  - postgres:16-alpine
+
+before_script:
+  - docker --version
+  - docker-compose --version
+
+build:
   stage: build
   script:
-    - docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" <<< "$CI_JOB_TOKEN"  # Аутентификация в GitLab Registry
-    - docker build -t $IMAGE_NAME .
-    - docker push $IMAGE_NAME
+    - docker-compose -f docker-compose.yml build
   artifacts:
     paths:
-      - docker-compose.yml
+      - ./* # Сохраняем для след этапов
 
-test:
+test_backend:
   stage: test
-  services:
-    - postgres:16-alpine
   script:
-    - docker pull $IMAGE_NAME  # Получаем собранный образ
-    - docker run --rm \
-      --network host \
-      -e DATABASE_URL="postgresql://runner:secure_password@postgres:5432/test_db" \
-      $IMAGE_NAME pytest /app/tests -v  # Запуск тестов
+    - docker-compose up -d db_test backend
+    - docker-compose run tests pytest backend/tests/ -v
+  dependencies:
+    - build
 
 deploy:
   stage: deploy
+  script:
+    - docker-compose -f docker-compose.yml up -d
   only:
     - main
   environment:
     name: production
-  script:
-    - docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY" <<< "$CI_JOB_TOKEN"
-    - docker-compose -f docker-compose.prod.yml up -d
