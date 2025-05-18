@@ -20,7 +20,7 @@ stages:
 build_image:
   stage: build
   script:
-    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - echo "$CI_JOB_TOKEN" | docker login -u "gitlab-ci-token" --password-stdin "$CI_REGISTRY"
     - docker build -t $IMAGE_NAME .
     - docker push $IMAGE_NAME
   artifacts:
