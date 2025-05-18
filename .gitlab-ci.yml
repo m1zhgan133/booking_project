@@ -1,7 +1,8 @@
 image: docker:latest
 
 services:
-  - docker:dind
+  - name: docker:dind
+    command: ["--tls=false"]
   - postgres:16-alpine
 
 variables:
