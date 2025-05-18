@@ -1,0 +1,37 @@
+stages:
+  - build
+  - test
+  - deploy
+
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+
+services:
+  - docker:dind
+  - postgres:16-alpine
+
+before_script:
+  - docker --version
+  - docker-compose --version
+
+build:
+  stage: build
+  script:
+    - docker-compose -f docker-compose.yml build
+  artifacts:
+    paths:
+      - ./* # Сохраняем для след этапов
+
+test_backend:
+  stage: test
+  script:
+    - docker-compose up -d db_test backend
+    - docker-compose run tests pytest backend/tests/ -v
+  dependencies:
+    - build
+
+deploy_staging:
+  stage: deploy
+  script:
+    - echo "Deploying will be here soon... :)"
