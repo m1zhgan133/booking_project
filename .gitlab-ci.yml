@@ -1,0 +1,49 @@
+image: docker:latest
+
+services:
+  - name: docker:dind
+    command: ["--tls=false"]
+  - postgres:16-alpine
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE:latest
+  DOCKER_HOST: tcp://docker:2375
+  POSTGRES_DB: test_db
+  POSTGRES_USER: runner
+  POSTGRES_PASSWORD: secure_password
+
+stages:
+  - build
+  - test
+  - deploy
+
+build_image:
+  stage: build
+  script:
+    - echo "$CI_JOB_TOKEN" | docker login -u "gitlab-ci-token" --password-stdin "$CI_REGISTRY"
+    - docker build -t $IMAGE_NAME .
+    - docker push $IMAGE_NAME
+  artifacts:
+    paths:
+      - docker-compose.yml
+
+test:
+  stage: test
+  variables:
+    DATABASE_URL: "postgresql://runner:secure_password@postgres:5432/test_db"
+  script:
+    - docker pull $IMAGE_NAME
+    - docker run --rm \
+      --network host \
+      -e DATABASE_URL \
+      $IMAGE_NAME pytest /app/tests -v
+
+deploy:
+  stage: deploy
+  only:
+    - main
+  environment:
+    name: production
+  script:
+    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker-compose -f docker-compose.prod.yml up -d

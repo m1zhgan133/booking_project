@@ -1,0 +1,465 @@
+openapi: "3.0.0"
+info:
+  title: "API для системы бронирования"
+  description: "API для управления бронированием мест и пользователями"
+  version: "1.0.0"
+servers:
+  - url: "/api"
+  - url: "http://backend:5000/api"
+  - url: "http://localhost:5000/api"
+paths:
+  /booking:
+    post:
+      summary: "Создать новое бронирование"
+      description: "Создает новую запись о бронировании места"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: "Имя пользователя"
+                password:
+                  type: string
+                  description: "Пароль пользователя"
+                st_datetime:
+                  type: string
+                  format: date-time
+                  description: "Дата и время начала бронирования (формат: YYYY-MM-DDThh:mm)"
+                duration:
+                  type: string
+                  description: "Продолжительность бронирования (формат: HH:mm)"
+                id_place:
+                  type: integer
+                  description: "Номер места (1-20)"
+                user_id:
+                  type: integer
+                  description: "ID пользователя (только для админа)"
+              required:
+                - username
+                - password
+                - st_datetime
+                - duration
+                - id_place
+      responses:
+        '201':
+          description: "Бронирование успешно создано"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Место успешно забронировано"
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: "Пользователь не найден"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+    get:
+      summary: "Получить информацию о бронированиях"
+      description: "Получает информацию о бронированиях в зависимости от типа запроса"
+      parameters:
+        - name: request_type
+          in: query
+          description: "Тип запроса (all, range)"
+          schema:
+            type: string
+            enum: [all, range]
+        - name: username
+          in: query
+          description: "Имя пользователя (для админа)"
+          schema:
+            type: string
+        - name: password
+          in: query
+          description: "Пароль пользователя (для админа)"
+          schema:
+            type: string
+        - name: start
+          in: query
+          description: "Начальное время для диапазона (YYYY-MM-DDThh:mm)"
+          schema:
+            type: string
+        - name: end
+          in: query
+          description: "Конечное время для диапазона (YYYY-MM-DDThh:mm)"
+          schema:
+            type: string
+        - name: duration
+          in: query
+          description: "Продолжительность (HH:mm или минуты)"
+          schema:
+            type: string
+        - name: not_include_id
+          in: query
+          description: "ID бронирования для исключения"
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: "Успешный ответ"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      seats:
+                        type: object
+                        additionalProperties:
+                          type: boolean
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        id_place:
+                          type: integer
+                        id_user:
+                          type: integer
+                        st_datetime:
+                          type: string
+                        en_datetime:
+                          type: string
+                        duration:
+                          type: integer
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+    patch:
+      summary: "Обновить бронирование"
+      description: "Обновляет существующее бронирование"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                booking_id:
+                  type: integer
+                username:
+                  type: string
+                password:
+                  type: string
+                place:
+                  type: integer
+                start:
+                  type: string
+                  format: date-time
+                duration:
+                  type: string
+              required:
+                - booking_id
+                - username
+                - password
+      responses:
+        '200':
+          description: "Бронирование успешно обновлено"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: "Бронирование не найдено"
+
+    delete:
+      summary: "Удалить бронирование"
+      description: "Удаляет существующее бронирование"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                booking_id:
+                  type: integer
+              required:
+                - username
+                - password
+                - booking_id
+      responses:
+        '204':
+          description: "Бронирование успешно удалено"
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: "Бронирование не найдено"
+
+  /user:
+    post:
+      summary: "Создать нового пользователя"
+      description: "Создает нового пользователя в системе"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  maxLength: 100
+                password:
+                  type: string
+                  maxLength: 100
+              required:
+                - username
+                - password
+      responses:
+        '201':
+          description: "Пользователь успешно создан"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+    get:
+      summary: "Получить информацию о пользователе(ях)"
+      description: "Получает информацию о пользователе или всех пользователях (для админа)"
+      parameters:
+        - name: request_type
+          in: query
+          description: "Тип запроса (all или отсутствует)"
+          schema:
+            type: string
+            enum: [all]
+        - name: username
+          in: query
+          description: "Имя пользователя"
+          schema:
+            type: string
+        - name: password
+          in: query
+          description: "Пароль пользователя"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Успешный ответ"
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        password:
+                          type: string
+                  - type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      password:
+                        type: string
+                      bookings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            id_place:
+                              type: integer
+                            st_datetime:
+                              type: string
+                            en_datetime:
+                              type: string
+                            duration:
+                              type: integer
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: "Пользователь не найден"
+
+    patch:
+      summary: "Обновить данные пользователя"
+      description: "Обновляет информацию о существующем пользователе (только для админа)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                user_id:
+                  type: integer
+                new_username:
+                  type: string
+                new_password:
+                  type: string
+              required:
+                - username
+                - password
+                - user_id
+      responses:
+        '200':
+          description: "Данные пользователя успешно обновлены"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+    delete:
+      summary: "Удалить пользователя"
+      description: "Удаляет существующего пользователя (только для админа)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                user_id:
+                  type: integer
+              required:
+                - username
+                - password
+                - user_id
+      responses:
+        '204':
+          description: "Пользователь успешно удален"
+        '400':
+          description: "Ошибка в параметрах запроса"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+
+  /is_admin:
+    post:
+      summary: "Проверить права администратора"
+      description: "Проверяет, является ли пользователь администратором"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+              required:
+                - username
+                - password
+      responses:
+        '200':
+          description: "Успешная авторизация администратора"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: "Неверные учетные данные администратора"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
