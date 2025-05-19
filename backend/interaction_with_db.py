@@ -1,8 +1,6 @@
-from flask import render_template
 from sqlalchemy import create_engine, Column, Integer, SmallInteger, Time, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import and_, or_, not_
-from sqlalchemy.sql import func
 from sqlalchemy import ForeignKey
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
