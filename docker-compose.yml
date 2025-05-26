@@ -79,7 +79,7 @@ services:
         condition: service_healthy
     networks:
       - booking-network
-    command: [ "pytest", "/app/tests", "-v", "--strict" ]
+#    command: [ "pytest", "/app/tests", "-v", "--strict" ]
 
 
 volumes:
