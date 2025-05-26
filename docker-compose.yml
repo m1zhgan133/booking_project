@@ -23,7 +23,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "5000:5000"
+      - "0.0.0.0:5000:5000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - admin_username=${admin_username}
@@ -39,7 +39,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "0.0.0.0:3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
