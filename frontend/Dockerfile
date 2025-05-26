@@ -6,7 +6,7 @@ COPY package.json package-lock.json ./
 
 RUN npm install --silent && \
     npm install react-router-dom --save && \
-    chmod +x node_modules/.bin/vite
+    npm cache clean --force
 
 COPY . .
 
