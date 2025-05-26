@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "-x vite",
+    "dev": "/app/node_modules/.bin/vite --host",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
