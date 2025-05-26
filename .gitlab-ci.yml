@@ -6,7 +6,7 @@ deploy_to_server:
   script:
     - echo "Deploying..."
     - docker-compose down
-    - docker-compose up -d --build
+    - docker-compose up --build
   after_script:
     - echo "Cleaning up..."
     - docker system prune -f
