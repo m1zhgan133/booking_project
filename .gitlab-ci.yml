@@ -9,4 +9,4 @@ deploy_to_server:
     - docker-compose up --build
   after_script:
     - echo "Cleaning up..."
-    - docker system prune -f
+#    - docker system prune -f
