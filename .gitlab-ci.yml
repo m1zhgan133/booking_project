@@ -3,7 +3,6 @@ image: docker:latest
 services:
   - name: docker:dind
     command: ["--tls=false"]
-  - postgres:16-alpine
 
 variables:
   IMAGE_NAME: $CI_REGISTRY_IMAGE:latest
@@ -29,14 +28,15 @@ build_image:
 
 test:
   stage: test
-  variables:
-    DATABASE_URL: "postgresql://runner:secure_password@postgres:5432/test_db"
   script:
-    - docker pull $IMAGE_NAME
-    - docker run --rm \
-      --network host \
-      -e DATABASE_URL \
-      $IMAGE_NAME pytest /app/tests -v
+    - apk add --no-cache postgresql-client
+    - docker-compose -f docker-compose.yml up -d db_test
+    - |
+      echo "Waiting for PostgreSQL to be ready..."
+      until pg_isready -h db_test -U runner -d test_db_test; do
+        sleep 2
+      done
+    - docker-compose -f docker-compose.yml run --rm tests pytest /app/tests -v || exit 1
 
 deploy:
   stage: deploy

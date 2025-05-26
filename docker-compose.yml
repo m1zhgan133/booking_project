@@ -79,11 +79,8 @@ services:
         condition: service_healthy
     networks:
       - booking-network
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:5000/api/health" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    command: [ "pytest", "/app/tests", "-v", "--strict" ]
+
 
 volumes:
   postgres_data:
