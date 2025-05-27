@@ -121,115 +121,115 @@ def create_app(test_config=None):
 
 
     # ---------------------------- booking ----------------------------
-    # @app.route('/api/booking', methods=['POST'])
-    # def create_booking_():
-    #     data = request.get_json()
-    #     username = data.get('username')
-    #     password = data.get('password')
-    #     st_datetime_str = data.get('st_datetime')
-    #     duration = data.get('duration')
-    #     id_place = data.get('id_place')
-    #
-    #     user_id = data.get('user_id')
-    #
-    #
-    #     duration = str_time_to_minutes(duration)
-    #     if duration == -1:
-    #         return error_response('Неверный формат длительности брони', 400)
-    #     if not is_datetime(st_datetime_str):
-    #         return error_response('Неверный формат даты', 400)
-    #     if not (username and password and id_place):
-    #         return error_response('Одно из обязательных полей не заполнено', 400)
-    #     try:
-    #         if int(id_place) < 1 or int(id_place) > 20:
-    #             return error_response('Недопустимые значения', 400)
-    #     except: return error_response('Недопустимые значения', 400)
-    #
-    #     # проверка на админа
-    #     if user_id and is_admin(username, password):
-    #         sender_user = get_user(id=user_id, is_admin=True)
-    #     else:
-    #         sender_user = get_user(name=username, password=password)
-    #
-    #     if not sender_user:
-    #         return error_response('Пользователь с таким именем и паролем не найден', 404)
-    #
-    #     response = requests.get(f'http://{base_url}/api/booking',
-    #         params={'start': st_datetime_str, 'duration': duration, 'request_type':'range'})
-    #     print(response.json())
-    #     if response.status_code != 200:
-    #         return error_response('Не удалось проверить доступность места',400)
-    #     if not response.json()['seats'].get(str(id_place), False):
-    #         return error_response('Место уже занято на это время',400)
-    #
-    #     new_book = create_booking(
-    #         id_user=sender_user['id'],
-    #         id_place=id_place,
-    #         datetime_str=st_datetime_str,
-    #         duration_minutes=duration
-    #     )
-    #     if new_book:
-    #         return jsonify({"message": "Место успешно забронировано"}), 201
-    #     else:
-    #         return error_response('Проблемы с созданием записи', 400)
-    #
-    #
-    #
-    # @app.route('/api/booking', methods=['GET'])
-    # def get_booking_():
-    #     request_type = request.args.get('request_type')  # значения: all, range, None - 1 объект
-    #
-    #     if request_type not in ('range', 'all', None):
-    #         return error_response('Некорректный тип запроса', 400)
-    #
-    #     if request_type and request_type == 'all':
-    #         username = request.args.get('username')
-    #         password = request.args.get('password')
-    #         if is_admin(username, password):
-    #             all_bookings = get_all_bookings()
-    #             return jsonify(all_bookings), 200
-    #         else:
-    #             return  error_response("Доступ запрещен", 401)
-    #
-    #     if request_type and request_type == 'range':
-    #         st_time_str = request.args.get('start')
-    #         en_time_str = request.args.get('end')
-    #         duration = request.args.get('duration')
-    #         not_include_id = request.args.get('not_include_id', -1)
-    #
-    #         # проверяем соответствие формату
-    #         if not is_datetime(st_time_str):
-    #             return error_response('неверный формат даты(начальное время)', 400)
-    #
-    #         if duration:
-    #             try:
-    #                 minutes = int(duration)
-    #             except:
-    #                 minutes = str_time_to_minutes(duration)
-    #             finally:
-    #                 if minutes == -1:
-    #                     return error_response('Неверный формат даты(продолжительность)', 400)
-    #                 en_time_str = add_minutes_to_datetime(st_time_str, minutes)
-    #
-    #         if not is_datetime(en_time_str):
-    #             return error_response('неверный формат даты(конечное время)', 400)
-    #
-    #
-    #         try:
-    #             seats = {
-    #                 i: True
-    #                 for i in range(1, 21)
-    #             }
-    #             all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str, not_include_id=not_include_id)
-    #             occupied_places = set([b['id_place'] for b in all_bookings])
-    #             for place in occupied_places:
-    #                 seats[int(place)] = False
-    #
-    #             return jsonify({"seats": seats}), 200 # seats - ответ на вопрос "свободно ли место?" для каждого места
-    #         except Exception as e:
-    #             return error_response(str(e), 400)
-    #
-    #     elif not request_type: return error_response('Функция пока не реализованна', 501)
+    @app.route('/api/booking', methods=['POST'])
+    def create_booking_():
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        st_datetime_str = data.get('st_datetime')
+        duration = data.get('duration')
+        id_place = data.get('id_place')
+
+        user_id = data.get('user_id')
+
+
+        duration = str_time_to_minutes(duration)
+        if duration == -1:
+            return error_response('Неверный формат длительности брони', 400)
+        if not is_datetime(st_datetime_str):
+            return error_response('Неверный формат даты', 400)
+        if not (username and password and id_place):
+            return error_response('Одно из обязательных полей не заполнено', 400)
+        try:
+            if int(id_place) < 1 or int(id_place) > 20:
+                return error_response('Недопустимые значения', 400)
+        except: return error_response('Недопустимые значения', 400)
+
+        # проверка на админа
+        if user_id and is_admin(username, password):
+            sender_user = get_user(id=user_id, is_admin=True)
+        else:
+            sender_user = get_user(name=username, password=password)
+
+        if not sender_user:
+            return error_response('Пользователь с таким именем и паролем не найден', 404)
+
+        response = requests.get(f'http://{base_url}/api/booking',
+            params={'start': st_datetime_str, 'duration': duration, 'request_type':'range'})
+        print(response.json())
+        if response.status_code != 200:
+            return error_response('Не удалось проверить доступность места',400)
+        if not response.json()['seats'].get(str(id_place), False):
+            return error_response('Место уже занято на это время',400)
+
+        new_book = create_booking(
+            id_user=sender_user['id'],
+            id_place=id_place,
+            datetime_str=st_datetime_str,
+            duration_minutes=duration
+        )
+        if new_book:
+            return jsonify({"message": "Место успешно забронировано"}), 201
+        else:
+            return error_response('Проблемы с созданием записи', 400)
+
+
+
+    @app.route('/api/booking', methods=['GET'])
+    def get_booking_():
+        request_type = request.args.get('request_type')  # значения: all, range, None - 1 объект
+
+        if request_type not in ('range', 'all', None):
+            return error_response('Некорректный тип запроса', 400)
+
+        if request_type and request_type == 'all':
+            username = request.args.get('username')
+            password = request.args.get('password')
+            if is_admin(username, password):
+                all_bookings = get_all_bookings()
+                return jsonify(all_bookings), 200
+            else:
+                return  error_response("Доступ запрещен", 401)
+
+        if request_type and request_type == 'range':
+            st_time_str = request.args.get('start')
+            en_time_str = request.args.get('end')
+            duration = request.args.get('duration')
+            not_include_id = request.args.get('not_include_id', -1)
+
+            # проверяем соответствие формату
+            if not is_datetime(st_time_str):
+                return error_response('неверный формат даты(начальное время)', 400)
+
+            if duration:
+                try:
+                    minutes = int(duration)
+                except:
+                    minutes = str_time_to_minutes(duration)
+                finally:
+                    if minutes == -1:
+                        return error_response('Неверный формат даты(продолжительность)', 400)
+                    en_time_str = add_minutes_to_datetime(st_time_str, minutes)
+
+            if not is_datetime(en_time_str):
+                return error_response('неверный формат даты(конечное время)', 400)
+
+
+            try:
+                seats = {
+                    i: True
+                    for i in range(1, 21)
+                }
+                all_bookings = get_bookings_by_datetime_range(st_time_str, en_time_str, not_include_id=not_include_id)
+                occupied_places = set([b['id_place'] for b in all_bookings])
+                for place in occupied_places:
+                    seats[int(place)] = False
+
+                return jsonify({"seats": seats}), 200 # seats - ответ на вопрос "свободно ли место?" для каждого места
+            except Exception as e:
+                return error_response(str(e), 400)
+
+        elif not request_type: return error_response('Функция пока не реализованна', 501)
 
 
     @app.route('/api/booking', methods=['PATCH'])
