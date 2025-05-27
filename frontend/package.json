@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "+x /app/node_modules/.bin/vite --host",
+    "dev": "chmod +x /app/node_modules/.bin/vite && /app/node_modules/.bin/vite --host",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
