@@ -8,15 +8,12 @@ build:
   script:
     - echo "build..."
     - docker-compose build
-  artifacts:
-    paths:
-      - .
-
 
 tests:
   stage: tests
   script:
     - echo "testing..."
+    - docker-compose build
     - docker-compose run --rm tests || exit 1
 
 deploy:
