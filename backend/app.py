@@ -95,8 +95,8 @@ def create_app(test_config=None):
         """Проверяет наличие и длину"""
         if not username or not password:
             return "Имя и пароль обязательны", 400
-        if len(username) > 100 or len(password) > 100:
-            return "Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400
+        if len(username) > 64 or len(password) > 64:
+            return "Имя или пароль слишком длинные(Максимальная длина - 64 символа)", 400
         return '', 200
 
     #------------------------- Запуск DB -------------------------
