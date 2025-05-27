@@ -24,4 +24,4 @@ deploy:
     - docker-compose up -d --build
   after_script:
     - echo "Cleaning up..."
-#    - docker system prune -f
+    - docker system prune -f
