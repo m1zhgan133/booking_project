@@ -103,8 +103,8 @@ def create_app(test_config=None):
 
 
     # Настройка Swagger UI
-    SWAGGER_URL = '/swagger'  # URL для Swagger UI
-    API_URL = '/static/swagger.yaml'  # Путь к вашему файлу swagger.yaml
+    SWAGGER_URL = '/swagger'
+    API_URL = '/swagger.yaml'
     swaggerui_blueprint = get_swaggerui_blueprint(
         SWAGGER_URL,
         API_URL,
