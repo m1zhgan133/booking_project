@@ -37,7 +37,7 @@ def client(test_app):
 def db_session():
     session = SessionLocal()
     yield session
-    session.rollback()
+    session.rollback() # Откатывает изменения
     session.close()
 
 
@@ -63,7 +63,7 @@ def test_user(client, db_session):
 def test_booking(test_user, client):
     booking_data = {
         'username': test_user['name'],
-        'password': 'testpass',
+        'password': test_user['password'],
         'st_datetime': (datetime.now() + timedelta(hours=1)).isoformat(timespec='minutes'),
         'duration': '01:30',
         'id_place': 1
