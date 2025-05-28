@@ -85,6 +85,6 @@ def test_booking(test_user, client):
         # Удаление с явным указанием user_id владельца
         client.delete('/api/booking', json={
             'username': test_user['name'],
-            'password': 'testpass',
+            'password': test_user['password'],
             'booking_id': booking_id
         })
