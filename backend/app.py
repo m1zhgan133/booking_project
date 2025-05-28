@@ -95,26 +95,9 @@ def create_app(test_config=None):
         """Проверяет наличие и длину"""
         if not username or not password:
             return "Имя и пароль обязательны", 400
-        if len(username) > 100 or len(password) > 100:
-            return "Имя или пароль слишком длинные(Максимальная длина - 100 символов)", 400
+        if len(username) > 64 or len(password) > 64:
+            return "Имя или пароль слишком длинные(Максимальная длина - 64 символа)", 400
         return '', 200
-
-    #------------------------- Запуск DB -------------------------
-
-
-    # Настройка Swagger UI
-    SWAGGER_URL = '/swagger'  # URL для Swagger UI
-    API_URL = '/static/swagger.yaml'  # Путь к вашему файлу swagger.yaml
-    swaggerui_blueprint = get_swaggerui_blueprint(
-        SWAGGER_URL,
-        API_URL,
-        config={
-            'app_name': "My Flask API"
-        }
-    )
-
-    # Регистрация маршрута для Swagger UI
-    app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL, name='swagger_ui_unique_name')
 
 
     # ------------------------------------------------------- основные функции
